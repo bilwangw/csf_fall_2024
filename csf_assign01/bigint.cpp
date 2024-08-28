@@ -4,6 +4,7 @@
 BigInt::BigInt()
   // TODO: initialize member variables
 {
+
 }
 
 BigInt::BigInt(uint64_t val, bool negative)

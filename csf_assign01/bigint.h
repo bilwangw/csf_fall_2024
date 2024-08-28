@@ -15,7 +15,8 @@
 class BigInt {
 private:
   // TODO: add fields
-
+  std::vector<uint64_t> data;
+  bool sign;
 public:
   //! Default constructor.
   //! The initialized BigInt value should be equal to 0.
