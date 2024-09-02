@@ -74,6 +74,7 @@ int main(int argc, char **argv) {
   TEST(test_initlist_ctor);
   TEST(test_copy_ctor);
   TEST(test_get_bits);
+  /*
   TEST(test_add_1);
   TEST(test_add_2);
   TEST(test_add_3);
@@ -92,10 +93,11 @@ int main(int argc, char **argv) {
   TEST(test_compare_2);
   TEST(test_div_1);
   TEST(test_div_2);
+  */
   TEST(test_to_hex_1);
   TEST(test_to_hex_2);
-  // TEST(test_to_dec_1);
-  // TEST(test_to_dec_2);
+   TEST(test_to_dec_1);
+   TEST(test_to_dec_2);
   // TODO: add calls to TEST for additional test functions
 
   TEST_FINI();

@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <iostream>
 
 //! @file
 //! Arbitrary-precision integer data type.

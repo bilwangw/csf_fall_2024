@@ -72,7 +72,8 @@ BigInt BigInt::operator-(const BigInt &rhs) const
 BigInt BigInt::operator-() const
 {
   // TODO: implement
-
+  BigInt minus(*this);
+  return minus;
 }
 
 bool BigInt::is_bit_set(unsigned n) const
@@ -102,21 +103,31 @@ int BigInt::compare(const BigInt &rhs) const
 
 std::string BigInt::to_hex() const
 {
+  if (data.empty()) {
+    return "0";
+  }
   std::string ans = "";
   for (std::vector<uint64_t>::const_iterator it = data.begin(); it != data.end(); it++) {
     uint64_t current = *it;
-    uint64_t counter = 1;
+    //uint64_t counter = 1;
+    int digit;
     while (current != 0) {
-      int digit = current % counter;
+      digit = current % 16;
       if (digit > 9) {
-        ans += (digit-10) + 'a';
+        ans += ((digit-10) + 'a');
       } else {
-        ans += digit;
+        ans += (digit + '0');
       }
-      counter *= 16;
+      //counter *= 16;
       current /= 16;
     }
   }
+  if(sign) {
+    ans += "-";
+  }
+  reverse(ans.begin(),ans.end());
+  //std::cout << ans << "\n";
+  
   return ans;
   // TODO: implement
   // divide 1, divide by 16, 
