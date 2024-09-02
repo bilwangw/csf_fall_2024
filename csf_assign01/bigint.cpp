@@ -49,30 +49,13 @@ bool BigInt::is_negative() const
 }
 
 const std::vector<uint64_t> &BigInt::get_bit_vector() const {
-  // TODO: implement
-  // std::vector<uint64_t>* ans = new std::vector<uint64_t>();
-  // for (std::vector<uint64_t>::const_iterator it = data.begin(); it != data.end(); it++) {
-  //     uint64_t curr = *it;
-  //     while (curr != 0) {
-  //       (*ans).push_back(curr % 2);
-  //       curr /= 2;
-  //     }
-  //     // while (curr) {
-  //     //   if (curr&1) {
-  //     //     (*ans).push_back(1);
-  //     //   } else {
-  //     //     (*ans).push_back(0);
-  //     //   }
-  //     //   curr >>=1;
-  //     // }
-  // }
-  // std::reverse(ans->begin(), ans->end());
   return data;
 }
 
 uint64_t BigInt::get_bits(unsigned index) const
 {
   // TODO: implement
+  return data[index];
 }
 
 BigInt BigInt::operator+(const BigInt &rhs) const
@@ -89,6 +72,7 @@ BigInt BigInt::operator-(const BigInt &rhs) const
 BigInt BigInt::operator-() const
 {
   // TODO: implement
+
 }
 
 bool BigInt::is_bit_set(unsigned n) const
