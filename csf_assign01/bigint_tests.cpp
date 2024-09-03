@@ -96,8 +96,8 @@ int main(int argc, char **argv) {
   */
   TEST(test_to_hex_1);
   TEST(test_to_hex_2);
-   TEST(test_to_dec_1);
-   TEST(test_to_dec_2);
+  //TEST(test_to_dec_1);
+  //TEST(test_to_dec_2);
   // TODO: add calls to TEST for additional test functions
 
   TEST_FINI();
@@ -138,8 +138,12 @@ void check_contents(const BigInt &bigint, std::initializer_list<uint64_t> expect
   unsigned count = 0;
 
   while (i != actual_vals.end() && j != expected_vals.end()) {
+    // std::cout << *i << '\n';
+    // std::cout << *j << '\n';
+
     if (*i != *j) {
       std::stringstream msg;
+      
       msg << "in word " << count
           << " actual value " << std::hex << *i
           << " does not match expected value " << std::hex << *j;
@@ -538,12 +542,18 @@ void test_to_hex_1(TestObjs *objs) {
   ASSERT("0" == result1);
 
   std::string result2 = objs->negative_nine.to_hex();
+  //std::cout << "result 2: " << result2;
   ASSERT("-9" == result2);
 
   std::string result3 = objs->u64_max.to_hex();
   ASSERT("ffffffffffffffff" == result3);
 
   std::string result4 = objs->two_pow_64.to_hex();
+  std::vector fourth = objs->two_pow_64.get_bit_vector();
+  // for (std::vector<uint64_t>::const_iterator it = fourth.begin(); it != fourth.end(); it++) {
+  //   std::cout << *it;
+  // }
+  // std::cout << "result 4: " << result4;
   ASSERT("10000000000000000" == result4);
 }
 

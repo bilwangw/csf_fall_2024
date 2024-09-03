@@ -1,6 +1,7 @@
 #include <cassert>
 #include "bigint.h"
 #include <algorithm>
+#include <cmath>
 
 BigInt::BigInt()
   // TODO: initialize member variables
@@ -106,31 +107,41 @@ std::string BigInt::to_hex() const
   if (data.empty()) {
     return "0";
   }
+  if (data.size() == 1 && data.front() == 0) {
+    return "0";
+  }
   std::string ans = "";
   for (std::vector<uint64_t>::const_iterator it = data.begin(); it != data.end(); it++) {
+    std::string temp = "";
     uint64_t current = *it;
     //uint64_t counter = 1;
     int digit;
-    while (current != 0) {
+    while (current > 0) {
       digit = current % 16;
       if (digit > 9) {
-        ans += ((digit-10) + 'a');
+        temp += ((digit-10) + 'a');
       } else {
-        ans += (digit + '0');
+        temp += (digit + '0');
       }
       //counter *= 16;
       current /= 16;
     }
+    if (it != data.end()-1) {
+      while (temp.length() != 16) {
+        temp += '0';
+      }
+    }
+    
+    ans += temp;
   }
   if(sign) {
     ans += "-";
   }
   reverse(ans.begin(),ans.end());
+  
   //std::cout << ans << "\n";
   
   return ans;
-  // TODO: implement
-  // divide 1, divide by 16, 
 }
 
 std::string BigInt::to_dec() const
