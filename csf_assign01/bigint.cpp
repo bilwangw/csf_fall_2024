@@ -29,6 +29,19 @@ BigInt::BigInt(const BigInt &other)
   data = other.data;
 }
 
+BigInt::BigInt(const BigInt &other, bool changeSign)
+  // TODO: initialize member variables
+{
+  if (changeSign) {
+    sign = !other.sign;
+    data = other.data;
+  } else {
+    sign = other.sign;
+    data = other.data;
+  }
+  
+}
+
 BigInt::~BigInt()
 {
 }
@@ -56,6 +69,9 @@ const std::vector<uint64_t> &BigInt::get_bit_vector() const {
 uint64_t BigInt::get_bits(unsigned index) const
 {
   // TODO: implement
+  if (index >= data.size()) {
+    return 0;
+  }
   return data[index];
 }
 
@@ -73,7 +89,9 @@ BigInt BigInt::operator-(const BigInt &rhs) const
 BigInt BigInt::operator-() const
 {
   // TODO: implement
-  BigInt minus(*this);
+
+  BigInt minus(*this, true);
+  //minus.sign = !(minus.sign);
   return minus;
 }
 

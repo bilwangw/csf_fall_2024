@@ -32,6 +32,7 @@ void cleanup(TestObjs *objs);
 // the expected values.
 void check_contents(const BigInt &bigint, std::initializer_list<uint64_t> expected_vals);
 
+void test_unary_minus(TestObjs *objs);
 // prototypes of test functions
 void test_default_ctor(TestObjs *objs);
 void test_u64_ctor(TestObjs *objs);
@@ -74,6 +75,7 @@ int main(int argc, char **argv) {
   TEST(test_initlist_ctor);
   TEST(test_copy_ctor);
   TEST(test_get_bits);
+  TEST(test_unary_minus);
   /*
   TEST(test_add_1);
   TEST(test_add_2);
@@ -223,6 +225,13 @@ void test_copy_ctor(TestObjs *objs) {
 
   check_contents(copy, { 0UL, 1UL });
   ASSERT(!copy.is_negative());
+}
+
+void test_unary_minus(TestObjs *objs) {
+  BigInt copy(objs->two_pow_64);
+  ASSERT(!copy.is_negative());
+  copy = -copy;
+  ASSERT(copy.is_negative());
 }
 
 void test_get_bits(TestObjs *objs) {
