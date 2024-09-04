@@ -33,7 +33,7 @@ BigInt::BigInt(const BigInt &other, bool changeSign)
   // TODO: initialize member variables
 {
   if (changeSign) {
-    sign = !other.sign;
+    sign = !other;
     data = other.data;
   } else {
     sign = other.sign;
