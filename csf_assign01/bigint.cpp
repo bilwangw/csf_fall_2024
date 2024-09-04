@@ -29,18 +29,6 @@ BigInt::BigInt(const BigInt &other)
   data = other.data;
 }
 
-BigInt::BigInt(const BigInt &other, bool changeSign)
-  // Constructor to optimize negation
-{
-  if (changeSign) {
-    sign = !other.is_negative();
-    data = other.data;
-  } else {
-    sign = other.sign;
-    data = other.data;
-  }
-  
-}
 
 BigInt::~BigInt()
 {
@@ -92,8 +80,8 @@ BigInt BigInt::operator-(const BigInt &rhs) const
 BigInt BigInt::operator-() const
 {
   // TODO: implement
-  BigInt minus(*this, true);
-  //minus.sign = !(minus.sign);
+  BigInt minus(*this);
+  minus.sign = !(minus.sign);
   return minus;
 }
 

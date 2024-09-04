@@ -31,7 +31,6 @@ public:
   //! @param negative if true, the value is negative
   BigInt(uint64_t val, bool negative = false);
 
-  BigInt(const BigInt &other, bool changeSign);
   //! Constructor from an `std::initializer_list` of `uint64_t` values
   //! to initialize the BigInt object's bit string, and (optionally)
   //! a boolean value indicating whether the value is negative.
