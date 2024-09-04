@@ -1,7 +1,5 @@
 #include <cassert>
 #include "bigint.h"
-#include <algorithm>
-#include <cmath>
 
 BigInt::BigInt()
   // initialize an empty big int
@@ -11,7 +9,7 @@ BigInt::BigInt()
 }
 
 BigInt::BigInt(uint64_t val, bool negative)
-  // Initialize a big int single uint64_t value and a sign
+  // Initialize a big int with a single uint64_t value and a sign
 {
   sign = negative; 
   data.push_back(val);
@@ -47,6 +45,8 @@ BigInt &BigInt::operator=(const BigInt &rhs)
 bool BigInt::is_negative() const
 {
   // Return whether or not BigInt is negative
+  // check if value is zero
+  // To-do: make zero check work for arbitrary amount of zeros
   if (data[0] == 0 && data.size() == 1) {
     return false;
   }
@@ -79,7 +79,7 @@ BigInt BigInt::operator-(const BigInt &rhs) const
 
 BigInt BigInt::operator-() const
 {
-  // TODO: implement
+  // Return the negation of the BigInt
   BigInt minus(*this);
   minus.sign = !(minus.sign);
   return minus;
@@ -147,7 +147,7 @@ std::string BigInt::to_hex() const
     ans += temp;
   }
   // Add a negative sign if negative
-  if(sign) {
+  if(this->is_negative()) {
     ans += "-";
   }
   // The hexadecimal string is constructed backwards, so it needs to be reversed
