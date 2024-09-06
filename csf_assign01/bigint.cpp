@@ -87,7 +87,15 @@ BigInt BigInt::operator-() const
 
 bool BigInt::is_bit_set(unsigned n) const
 {
-  // TODO: implement
+  // get the nth bit (starting from 0) and return whether that bit is 1 or not
+  unsigned localIndex = n % (sizeof(uint64_t) * 8); // get the index of the desired bit relative to its uint64_t index
+  uint64_t bitSet = get_bits(n / (sizeof(uint64_t) * 8)); // get the uint64_t value that n is in
+  unsigned cursor = 0;
+  while (cursor < localIndex) { // turn to bits, once it gets to nth bit exit loop
+    bitSet = bitSet >> 1;
+    cursor++;
+  }
+  return bitSet % 2; //MIGHT BE OFF BY ONE RN
 }
 
 BigInt BigInt::operator<<(unsigned n) const
