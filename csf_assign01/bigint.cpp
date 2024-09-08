@@ -69,6 +69,20 @@ uint64_t BigInt::get_bits(unsigned index) const
 BigInt BigInt::operator+(const BigInt &rhs) const
 {
   // TODO: implement
+  unsigned len;
+  BigInt sum;
+  // Make a variable to track the smallest data vector size
+  if(data.size() > rhs.data.size()) {
+    len = rhs.data.size();
+    
+  }
+  else {
+    len = data.size();
+  }
+  for(unsigned i = 0; i < len; i++) {
+    sum.data.push_back((!(this->is_negative()) * this->get_bits(i)) + (!(rhs.is_negative()) * rhs.get_bits(i)));
+  }
+
 }
 
 BigInt BigInt::operator-(const BigInt &rhs) const
