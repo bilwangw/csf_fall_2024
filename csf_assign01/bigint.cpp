@@ -118,7 +118,7 @@ BigInt BigInt::operator+(const BigInt &rhs) const
     rhs_longer = true;
   }
   //addition of same signs
-  //if(this->is_negative() == rhs.is_negative()) {
+  if(this->is_negative() == rhs.is_negative()) {
     for(unsigned i = 0; i < len; i++) {
       local_sum = this->get_bits(i) + rhs.get_bits(i) + carry_over;
       //std::cout << "localsum: " << local_sum << "\n";
@@ -152,7 +152,98 @@ BigInt BigInt::operator+(const BigInt &rhs) const
       sum.data.push_back(1);
     }
     sum.sign = this->is_negative();
-  //}
+  }
+  //different signs
+  else {
+    if(data.size() == rhs.data.size()) {
+      if(data[len - 1] < rhs.data[len - 1]) { // compare sizes of the most significant bit
+        rhs_longer = true; // rhs is greater in this case
+      }
+      else {
+        rhs_longer = false;
+      }
+    }
+    for(unsigned i = 0; i < len; i++) {
+      if(rhs_longer) {
+        local_sum = rhs.get_bits(i) - this->get_bits(i)  - carry_over;
+        if (rhs.get_bits(i) < carry_over) {
+          carry_over = true;
+        }
+        else if (rhs.get_bits(i) - carry_over < this->get_bits(i)) {
+          carry_over = true;
+        }
+        else {
+          carry_over = false;
+        }
+      }
+      else {
+        local_sum = this->get_bits(i) - rhs.get_bits(i) - carry_over;
+        if (this->get_bits(i) < carry_over) {
+          carry_over = true;
+        }
+        else if (rhs.get_bits(i) > this->get_bits(i) - carry_over) {
+          carry_over = true;
+        }
+        else {
+          carry_over = false;
+        }
+      }
+
+      //std::cout << "localsum: " << local_sum << "\n";
+      //check if overflows, including if it overflows from the carry over digit
+      /*
+      if (BigInt::check_overflow(this->get_bits(i), carry_over)) {
+        carry_over = true;
+      }
+      else if (BigInt::check_overflow(this->get_bits(i) + carry_over, rhs.get_bits(i))) {
+        carry_over = true;
+      }
+      else {
+        carry_over = false;
+      }
+      */
+      sum.data.push_back(local_sum);
+    }
+    for(unsigned i = len; i < max_len; i++) {
+      if(rhs_longer) {
+        local_sum = rhs.get_bits(i) - carry_over;
+        if (rhs.get_bits(i) < carry_over) {
+          carry_over = true;
+        }
+        else {
+          carry_over = false;
+        }
+      }
+      else {
+        local_sum = this->get_bits(i) - carry_over;
+        if (this->get_bits(i) < carry_over) {
+          carry_over = true;
+        }
+        else {
+          carry_over = false;
+        }
+      }
+      //check if overflows, including if it overflows from the carry over digit
+      /*
+      if (BigInt::check_overflow(this->get_bits(i) * !rhs_longer + carry_over, rhs.get_bits(i) * rhs_longer)) {
+        carry_over = true;
+      }
+      else if (BigInt::check_overflow(this->get_bits(i) * !rhs_longer, carry_over)) {
+        carry_over = true;
+      }
+      else {
+        carry_over = false;
+      }
+      */
+      sum.data.push_back(local_sum);
+    }
+    if(rhs_longer) {
+      sum.sign = rhs.sign;
+    }
+    else {
+      sum.sign = this->sign;
+    }
+  }
   /*
   std::cout << "index1 of this: " << this->data[0] << "\n";
   std::cout << "index1 of rhs: " << rhs.data[0] << "\n";
