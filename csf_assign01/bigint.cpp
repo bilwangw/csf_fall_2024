@@ -282,7 +282,16 @@ bool BigInt::is_bit_set(unsigned n) const
 
 BigInt BigInt::operator<<(unsigned n) const
 {
+  if (this->is_negative()) {
+    throw std::invalid_argument("negative number not allowed");
+  }
+  BigInt shifted = *this;
+  unsigned add = 2<<n;
   // TODO: implement
+  for(int i = 0; i < n; i++) {
+    shifted = shifted + shifted;
+  }
+  return shifted;
 
 }
 
