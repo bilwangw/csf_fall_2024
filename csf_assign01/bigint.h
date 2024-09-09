@@ -6,6 +6,7 @@
 #include <string>
 #include <cstdint>
 #include <algorithm>
+#include <iostream>
 
 //! @file
 //! Arbitrary-precision integer data type.
@@ -185,8 +186,13 @@ public:
   //! @return the value of this BigInt object in decimal (base-10)
   std::string to_dec() const;
 
+
 private:
   // TODO: add helper functions
+
+  //check overlofw
+  bool check_overflow(uint64_t a, uint64_t b) const;
+  bool is_zero(BigInt input) const;
 };
 
 #endif // BIGINT_H

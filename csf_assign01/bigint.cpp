@@ -1,6 +1,26 @@
 #include <cassert>
 #include "bigint.h"
 
+bool BigInt::check_overflow(uint64_t a, uint64_t b) const {
+  uint64_t sum = a + b;
+  if (sum < a || sum < b) {
+    return true;
+  }
+  return false;
+}
+
+bool BigInt::is_zero(BigInt input) const {
+  if(input.data.empty()){
+    return true;
+  }
+  for (std::vector<uint64_t>::const_iterator it = input.data.begin(); it != input.data.end(); it++) {
+    if (*it != 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
 BigInt::BigInt()
   // initialize an empty big int
 {
@@ -47,7 +67,7 @@ bool BigInt::is_negative() const
   // Return whether or not BigInt is negative
   // check if value is zero
   // To-do: make zero check work for arbitrary amount of zeros
-  if (data[0] == 0 && data.size() == 1) {
+  if (is_zero(*this)) {
     return false;
   }
   return sign;
@@ -68,21 +88,77 @@ uint64_t BigInt::get_bits(unsigned index) const
 
 BigInt BigInt::operator+(const BigInt &rhs) const
 {
-  // TODO: implement
-  unsigned len;
+  // 
+  unsigned len; // length of shorter BigInt
+  unsigned max_len; // length of longer BigInt
+  bool rhs_longer;
+  uint64_t local_sum;
+  bool carry_over = false;
   BigInt sum;
+  sum.data.erase(sum.data.begin());
+
+  //check if one of the numbers is zero
+  if(is_zero(*this)) {
+    return rhs;
+  }
+  if(is_zero(rhs)) {
+    return *this;
+  }
+
+
   // Make a variable to track the smallest data vector size
   if(data.size() > rhs.data.size()) {
     len = rhs.data.size();
-    
+    max_len = data.size();
+    rhs_longer = false;
   }
   else {
     len = data.size();
+    max_len = rhs.data.size();
+    rhs_longer = true;
   }
-  for(unsigned i = 0; i < len; i++) {
-    sum.data.push_back((!(this->is_negative()) * this->get_bits(i)) + (!(rhs.is_negative()) * rhs.get_bits(i)));
-  }
-
+  //addition of same signs
+  //if(this->is_negative() == rhs.is_negative()) {
+    for(unsigned i = 0; i < len; i++) {
+      local_sum = this->get_bits(i) + rhs.get_bits(i) + carry_over;
+      //std::cout << "localsum: " << local_sum << "\n";
+      //check if overflows, including if it overflows from the carry over digit
+      if (BigInt::check_overflow(this->get_bits(i), carry_over)) {
+        carry_over = true;
+      }
+      else if (BigInt::check_overflow(this->get_bits(i) + carry_over, rhs.get_bits(i))) {
+        carry_over = true;
+      }
+      else {
+        carry_over = false;
+      }
+      sum.data.push_back(local_sum);
+    }
+    for(unsigned i = len; i < max_len; i++) {
+      local_sum = !rhs_longer * this->get_bits(i) + rhs_longer * rhs.get_bits(i) + carry_over;
+      //check if overflows, including if it overflows from the carry over digit
+      if (BigInt::check_overflow(this->get_bits(i) * !rhs_longer + carry_over, rhs.get_bits(i) * rhs_longer)) {
+        carry_over = true;
+      }
+      else if (BigInt::check_overflow(this->get_bits(i) * !rhs_longer, carry_over)) {
+        carry_over = true;
+      }
+      else {
+        carry_over = false;
+      }
+      sum.data.push_back(local_sum);
+    }
+    if(carry_over) {
+      sum.data.push_back(1);
+    }
+    sum.sign = this->is_negative();
+  //}
+  /*
+  std::cout << "index1 of this: " << this->data[0] << "\n";
+  std::cout << "index1 of rhs: " << rhs.data[0] << "\n";
+  std::cout << "index1 of sum: " << sum.data[0] << "\n";
+  */
+  return sum;
 }
 
 BigInt BigInt::operator-(const BigInt &rhs) const
@@ -182,4 +258,3 @@ std::string BigInt::to_dec() const
 {
   // TODO: implement
 }
-
