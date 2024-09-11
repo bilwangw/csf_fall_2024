@@ -310,7 +310,7 @@ BigInt BigInt::operator*(const BigInt &rhs) const
 
 BigInt BigInt::operator/(const BigInt &rhs) const
 {
-  // 
+ 
 }
 
 int BigInt::compare(const BigInt &rhs) const

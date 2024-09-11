@@ -67,6 +67,7 @@ void test_to_dec_2(TestObjs *objs);
 void test_unary_minus(TestObjs *objs);
 void test_add_special(TestObjs *);
 void test_add_special2(TestObjs *);
+void test_sub_special(TestObjs *);
 void test_is_bit_set_custom(TestObjs *);
 void test_mul_negative(TestObjs *);
 void test_compare_custom(TestObjs *);
@@ -111,6 +112,7 @@ int main(int argc, char **argv) {
   TEST(test_unary_minus);
   TEST(test_add_special);
   TEST(test_add_special2);
+  TEST(test_sub_special);
   TEST(test_is_bit_set_custom);
   TEST(test_mul_negative);
   TEST(test_compare_custom);
@@ -380,6 +382,15 @@ void test_sub_4(TestObjs *) {
   }
 }
 
+void test_sub_special(TestObjs *objs) {
+  //subtracting from 0 gives negative of the original value
+  BigInt left({0xda069f1394210a58UL});
+  BigInt right({0x0UL});
+  BigInt result = right-left;
+  check_contents(result, {0xda069f1394210a58UL});
+  ASSERT(result.is_negative());
+
+}
 void test_is_bit_set_1(TestObjs *objs) {
   // some basic tests for is_bit_set
 
