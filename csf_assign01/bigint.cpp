@@ -2,6 +2,7 @@
 #include "bigint.h"
 
 bool BigInt::check_overflow(uint64_t a, uint64_t b) const {
+  // helper function to check if adding two uint64_t will overflow
   uint64_t sum = a + b;
   if (sum < a || sum < b) {
     return true;
@@ -10,6 +11,7 @@ bool BigInt::check_overflow(uint64_t a, uint64_t b) const {
 }
 
 bool BigInt::is_zero(BigInt input) const {
+  // check if a BigInt is equal to zero (empty or only contains zeroes)
   if(input.data.empty()){
     return true;
   }
@@ -74,6 +76,7 @@ bool BigInt::is_negative() const
 }
 
 const std::vector<uint64_t> &BigInt::get_bit_vector() const {
+  // return the data vector
   return data;
 }
 
@@ -88,25 +91,23 @@ uint64_t BigInt::get_bits(unsigned index) const
 
 BigInt BigInt::operator+(const BigInt &rhs) const
 {
-  // 
+  // Overload + operator to add two BigInts together
   unsigned len; // length of shorter BigInt
   unsigned max_len; // length of longer BigInt
-  bool rhs_longer;
-  uint64_t local_sum;
-  bool carry_over = false;
-  BigInt sum;
-  sum.data.erase(sum.data.begin());
+  bool rhs_longer; // boolean to store whether rhs or lhs is larger
+  uint64_t local_sum; // temporary storage for the sum of each "digit" during addition
+  bool carry_over = false; // determine whether to carry over a value or not
+  BigInt sum; // return value
+  sum.data.erase(sum.data.begin()); // ensure BigInt sum's data vector is empty
 
-  //check if one of the numbers is zero
+  //check if one of the numbers is zero, if so just return the non-zero value
   if(is_zero(*this)) {
     return rhs;
   }
   if(is_zero(rhs)) {
     return *this;
   }
-
-
-  // Make a variable to track the smallest data vector size
+  // Track whether rhs or lhs is larger
   if(data.size() > rhs.data.size()) {
     len = rhs.data.size();
     max_len = data.size();
@@ -117,12 +118,11 @@ BigInt BigInt::operator+(const BigInt &rhs) const
     max_len = rhs.data.size();
     rhs_longer = true;
   }
-  //addition of same signs
+  // addition of same signs
   if(this->is_negative() == rhs.is_negative()) {
     for(unsigned i = 0; i < len; i++) {
-      local_sum = this->get_bits(i) + rhs.get_bits(i) + carry_over;
-      //std::cout << "localsum: " << local_sum << "\n";
-      //check if overflows, including if it overflows from the carry over digit
+      local_sum = this->get_bits(i) + rhs.get_bits(i) + carry_over; // sum of the two values in the current index, plus carryover if applicable
+      // check if overflows, including if it overflows from the carry over digit
       if (BigInt::check_overflow(this->get_bits(i), carry_over)) {
         carry_over = true;
       }
@@ -134,9 +134,10 @@ BigInt BigInt::operator+(const BigInt &rhs) const
       }
       sum.data.push_back(local_sum);
     }
+    // append the rest of the larger number, including carry over if applicable
     for(unsigned i = len; i < max_len; i++) {
-      local_sum = !rhs_longer * this->get_bits(i) + rhs_longer * rhs.get_bits(i) + carry_over;
-      //check if overflows, including if it overflows from the carry over digit
+      local_sum = !rhs_longer * this->get_bits(i) + rhs_longer * rhs.get_bits(i) + carry_over; // use rhs_longer to cancel out smaller number
+      // check if overflows, including if it overflows from the carry over digit
       if (BigInt::check_overflow(this->get_bits(i) * !rhs_longer + carry_over, rhs.get_bits(i) * rhs_longer)) {
         carry_over = true;
       }
@@ -148,13 +149,16 @@ BigInt BigInt::operator+(const BigInt &rhs) const
       }
       sum.data.push_back(local_sum);
     }
+    // if it carries over at the end, add a one to a new index
     if(carry_over) {
       sum.data.push_back(1);
     }
+    // assign the sign
     sum.sign = this->is_negative();
   }
-  //different signs
+  // addition of opposite signs
   else {
+    //check to see which is numerically greater if the index size is the same
     if(data.size() == rhs.data.size()) {
       if(data[len - 1] < rhs.data[len - 1]) { // compare sizes of the most significant bit
         rhs_longer = true; // rhs is greater in this case
@@ -163,9 +167,11 @@ BigInt BigInt::operator+(const BigInt &rhs) const
         rhs_longer = false;
       }
     }
+    // subtract absolute magnitudes: bigger number - smaller number
     for(unsigned i = 0; i < len; i++) {
+      // subtract from larger number
       if(rhs_longer) {
-        local_sum = rhs.get_bits(i) - this->get_bits(i)  - carry_over;
+        local_sum = rhs.get_bits(i) - this->get_bits(i)  - carry_over; // carry over if necessary
         if (rhs.get_bits(i) < carry_over) {
           carry_over = true;
         }
@@ -188,22 +194,9 @@ BigInt BigInt::operator+(const BigInt &rhs) const
           carry_over = false;
         }
       }
-
-      //std::cout << "localsum: " << local_sum << "\n";
-      //check if overflows, including if it overflows from the carry over digit
-      /*
-      if (BigInt::check_overflow(this->get_bits(i), carry_over)) {
-        carry_over = true;
-      }
-      else if (BigInt::check_overflow(this->get_bits(i) + carry_over, rhs.get_bits(i))) {
-        carry_over = true;
-      }
-      else {
-        carry_over = false;
-      }
-      */
       sum.data.push_back(local_sum);
     }
+    // append extra digits of larger number, factoring in carry over
     for(unsigned i = len; i < max_len; i++) {
       if(rhs_longer) {
         local_sum = rhs.get_bits(i) - carry_over;
@@ -223,20 +216,9 @@ BigInt BigInt::operator+(const BigInt &rhs) const
           carry_over = false;
         }
       }
-      //check if overflows, including if it overflows from the carry over digit
-      /*
-      if (BigInt::check_overflow(this->get_bits(i) * !rhs_longer + carry_over, rhs.get_bits(i) * rhs_longer)) {
-        carry_over = true;
-      }
-      else if (BigInt::check_overflow(this->get_bits(i) * !rhs_longer, carry_over)) {
-        carry_over = true;
-      }
-      else {
-        carry_over = false;
-      }
-      */
       sum.data.push_back(local_sum);
     }
+    // assign the proper sign
     if(rhs_longer) {
       sum.sign = rhs.sign;
     }
@@ -244,18 +226,12 @@ BigInt BigInt::operator+(const BigInt &rhs) const
       sum.sign = this->sign;
     }
   }
-  /*
-  std::cout << "index1 of this: " << this->data[0] << "\n";
-  std::cout << "index1 of rhs: " << rhs.data[0] << "\n";
-  std::cout << "index1 of sum: " << sum.data[0] << "\n";
-  */
   return sum;
 }
 
 BigInt BigInt::operator-(const BigInt &rhs) const
 {
-  // TODO: implement
-  // Hint: a - b could be computed as a + -b
+  // overloaded - operator, done by adding lhs + -(rhs)
   return *this + (-rhs);
 }
 
@@ -282,12 +258,14 @@ bool BigInt::is_bit_set(unsigned n) const
 
 BigInt BigInt::operator<<(unsigned n) const
 {
+  // Left shift operator
+  // check if negative
   if (this->is_negative()) {
     throw std::invalid_argument("negative number not allowed");
   }
   BigInt shifted = *this;
   unsigned add = 2<<n;
-  // TODO: implement
+  // shift by continuously adding to itself, effectively multiplying by 2 2^n times
   for(int i = 0; i < n; i++) {
     shifted = shifted + shifted;
   }
@@ -307,6 +285,7 @@ BigInt BigInt::operator/(const BigInt &rhs) const
 
 int BigInt::compare(const BigInt &rhs) const
 {
+  // check if opposite signs
   if (rhs.is_negative() != this->is_negative()) {
     if (rhs.is_negative()) {
       return 1;
@@ -314,21 +293,22 @@ int BigInt::compare(const BigInt &rhs) const
       return -1;
     }
   }
-  int reverse = 1;
+  int reverse = 1; // reverse changed to -1 to reverse output if numbers are negative
   if (rhs.is_negative()) {
     reverse = -1;
   }
-  // TODO: implement
+  // check which number is bigger
+  // first compare vector sizes
   if (rhs.data.size() > this->data.size()) {
     return -1*reverse;
   } else if (rhs.data.size() < this->data.size()) {
     return 1*reverse;
-  } else {
+  } else { // if sizes are equal, check the magnitudes of the last index
     if (rhs.data[rhs.data.size()-1] < this->data[this->data.size()-1]) {
       return 1*reverse;
     } else if (rhs.data[rhs.data.size()-1] > this->data[this->data.size()-1]) {
       return -1*reverse;
-    } else {
+    } else { // if magnitudes of last index are the same, iterate through the rest of the indices
       for (int i = rhs.data.size()-1; i >= 0; i--) {
         if (rhs.data[i] < this->data[i]) {
           return 1*reverse;
@@ -336,7 +316,7 @@ int BigInt::compare(const BigInt &rhs) const
           return -1*reverse;
         } 
       }
-      return 0;
+      return 0; // if both are equal, return 0
     }
   }
 }
@@ -389,7 +369,7 @@ std::string BigInt::to_hex() const
 
 std::string BigInt::to_dec() const
 {
-  // Convert a BigInt into a hexidecimal string
+  // Convert a BigInt into a decimal string
   // Check if the BigInt is empty
   if (data.empty()) {
     return "0";
@@ -406,7 +386,7 @@ std::string BigInt::to_dec() const
     int digit;
     while (current > 0) {
       digit = current % 10;
-      // Append the appropriate hexadecimal value to the string
+      // Append the appropriate decimal value to the string
       temp += (digit + '0');
       current /= 10;
     }
@@ -424,7 +404,7 @@ std::string BigInt::to_dec() const
   if(this->is_negative()) {
     ans += "-";
   }
-  // The hexadecimal string is constructed backwards, so it needs to be reversed
+  // The decimal string is constructed backwards, so it needs to be reversed
   reverse(ans.begin(),ans.end());
   
   return ans;
