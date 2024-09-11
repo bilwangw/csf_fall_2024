@@ -38,7 +38,6 @@ BigInt::BigInt(uint64_t val, bool negative)
 }
 
 BigInt::BigInt(std::initializer_list<uint64_t> vals, bool negative): data(vals), sign(negative)
-  // TODO: initialize member variables
 {
 }
 
@@ -52,6 +51,7 @@ BigInt::BigInt(const BigInt &other)
 
 BigInt::~BigInt()
 {
+  //destructor empty, no memory allocated
 }
 
 BigInt &BigInt::operator=(const BigInt &rhs)
@@ -67,8 +67,7 @@ BigInt &BigInt::operator=(const BigInt &rhs)
 bool BigInt::is_negative() const
 {
   // Return whether or not BigInt is negative
-  // check if value is zero
-  // To-do: make zero check work for arbitrary amount of zeros
+  // check if value is zero, return positive sign if so
   if (is_zero(*this)) {
     return false;
   }
@@ -253,7 +252,7 @@ bool BigInt::is_bit_set(unsigned n) const
     bitSet = bitSet >> 1;
     cursor++;
   }
-  return bitSet % 2; //MIGHT BE OFF BY ONE RN
+  return bitSet % 2;
 }
 
 BigInt BigInt::operator<<(unsigned n) const
@@ -272,7 +271,6 @@ BigInt BigInt::operator<<(unsigned n) const
   
   BigInt shifted = *this;
   
-  //unsigned add = 2<<mod;
   // shift by continuously adding to itself, effectively multiplying by 2 2^n times
   for(int i = 0; i < mod; i++) {
     shifted = shifted + shifted;
@@ -286,25 +284,24 @@ BigInt BigInt::operator<<(unsigned n) const
 
 BigInt BigInt::operator*(const BigInt &rhs) const
 {
-  // TODO: implement
+  // Multiply two BigInts
+  // Using the algorithm 2^5 × m + 2^2 × m + 2^0 × m 
+  // get the bits using is_bit_set
   std::string binary;
   uint64_t size = rhs.data.size() * 64;
-
-  // for (int i = rhs.data.size()-1; i >= 0; i--) {
-  //   binary += std::bitset<64>(rhs.get_bits(i)).to_string();
-  // } 
   BigInt ans(0);
   for (uint64_t i = 0; i < size; i++){
-    if (rhs.is_bit_set(i)) {
-        //make sure to check if *this is negative
+    if (rhs.is_bit_set(i)) { // get the bit in rhs
+        // make sure to check if *this is negative, and make it positive so is bit set can work
+        // use bit shift to multiply lhs by a multiple of two, then add to the sum
         if ((*this).is_negative()) {
           ans = ans + ((-(*this)) << (i));
         } else {
           ans = ans + (*this << (i));
         }
-        
     }   
   }
+  // set the sign
   if ((*this).is_negative() != rhs.is_negative()) {
     ans = -ans;
   }
@@ -313,7 +310,7 @@ BigInt BigInt::operator*(const BigInt &rhs) const
 
 BigInt BigInt::operator/(const BigInt &rhs) const
 {
-  // TODO: implement
+  // 
 }
 
 int BigInt::compare(const BigInt &rhs) const
