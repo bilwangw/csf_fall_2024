@@ -288,14 +288,25 @@ BigInt BigInt::operator*(const BigInt &rhs) const
 {
   // TODO: implement
   std::string binary;
-  for (int i = rhs.data.size()-1; i >= 0; i--) {
-    binary += std::bitset<64>(rhs.get_bits(i)).to_string();
-  } 
+  uint64_t size = rhs.data.size() * 64;
+
+  // for (int i = rhs.data.size()-1; i >= 0; i--) {
+  //   binary += std::bitset<64>(rhs.get_bits(i)).to_string();
+  // } 
   BigInt ans(0);
-  for (uint64_t i = 0; i < binary.length(); i++){
-    if (binary[i] == '1') {
-        ans = ans + (*this << (binary.length()-i-1));
+  for (uint64_t i = 0; i < size; i++){
+    if (rhs.is_bit_set(i)) {
+        //make sure to check if *this is negative
+        if ((*this).is_negative()) {
+          ans = ans + ((-(*this)) << (i));
+        } else {
+          ans = ans + (*this << (i));
+        }
+        
     }   
+  }
+  if ((*this).is_negative() != rhs.is_negative()) {
+    ans = -ans;
   }
   return ans;
 }

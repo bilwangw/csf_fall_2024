@@ -36,6 +36,7 @@ void test_unary_minus(TestObjs *objs);
 void test_add_special(TestObjs *);
 void test_add_special2(TestObjs *);
 void test_is_bit_set_custom(TestObjs *);
+void test_mul_negative(TestObjs *);
 
 // prototypes of test functions
 void test_default_ctor(TestObjs *objs);
@@ -107,6 +108,7 @@ int main(int argc, char **argv) {
   TEST(test_add_special);
   TEST(test_add_special2);
   TEST(test_is_bit_set_custom);
+  TEST(test_mul_negative);
   TEST_FINI();
 }
 
@@ -539,6 +541,24 @@ void test_mul_2(TestObjs *) {
     BigInt result = left * right;
     check_contents(result, {0x2bf1cf198f85396eUL, 0x92c5b43447ed673fUL, 0xbb463828efUL});
     ASSERT(!result.is_negative());
+  }
+}
+
+void test_mul_negative(TestObjs *) {
+  // multiplication test(s) with negatives
+  {
+    BigInt left({0x20UL}, true);
+    BigInt right({0x4UL});
+    BigInt result = left * right;
+    check_contents(result, {0x80UL});
+    ASSERT(result.is_negative());
+  }
+  {
+    BigInt left({0x20UL}, true);
+    BigInt right({0x4UL});
+    BigInt result = right * left;
+    check_contents(result, {0x80UL});
+    ASSERT(result.is_negative());
   }
 }
 
