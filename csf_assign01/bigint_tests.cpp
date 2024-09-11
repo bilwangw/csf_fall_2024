@@ -33,6 +33,9 @@ void cleanup(TestObjs *objs);
 void check_contents(const BigInt &bigint, std::initializer_list<uint64_t> expected_vals);
 
 void test_unary_minus(TestObjs *objs);
+void test_add_special(TestObjs *);
+void test_add_special2(TestObjs *);
+void test_is_bit_set_custom(TestObjs *);
 
 // prototypes of test functions
 void test_default_ctor(TestObjs *objs);
@@ -88,19 +91,22 @@ int main(int argc, char **argv) {
   TEST(test_is_bit_set_2);
   TEST(test_lshift_1);
   TEST(test_lshift_2);
-  // TEST(test_mul_1);
-  // TEST(test_mul_2);
+  TEST(test_mul_1);
+  TEST(test_mul_2);
   TEST(test_compare_1);
   TEST(test_compare_2);
   // TEST(test_div_1);
   // TEST(test_div_2);
   TEST(test_to_hex_1);
   TEST(test_to_hex_2);
-  //TEST(test_to_dec_1);
-  //TEST(test_to_dec_2);
-  // TODO: add calls to TEST for additional test functions
-  TEST(test_unary_minus);
+  TEST(test_to_dec_1);
+  TEST(test_to_dec_2);
 
+  // Custom Tests
+  TEST(test_unary_minus);
+  TEST(test_add_special);
+  TEST(test_add_special2);
+  TEST(test_is_bit_set_custom);
   TEST_FINI();
 }
 
@@ -310,6 +316,34 @@ void test_add_4(TestObjs *) {
 
 }
 
+void test_add_special(TestObjs *) {
+  {
+    //tests if adding the same number but inverted gives 0
+    BigInt left({0x10UL, 0x10UL});
+    BigInt right({0x10UL, 0x10UL}, true);
+    BigInt result = left + right;
+    check_contents(result, {0x0UL, 0x0UL});
+    ASSERT(!result.is_negative());
+  }
+
+  {
+    //checks if adding numbers with least significant bits being 0
+    BigInt left({0x0UL, 0x0UL, 0x36UL});
+    BigInt right({0xe2b272a002612fe3UL, 0xd1ec655e5e2e3d38UL});
+    BigInt result = left + right;
+    check_contents(result, {0xe2b272a002612fe3UL, 0xd1ec655e5e2e3d38UL, 0x36UL});
+    ASSERT(!result.is_negative());
+  }
+}
+
+void test_add_special2(TestObjs *) {
+  //check if moving places within the bit vector works as expected
+    BigInt left({0x1UL});
+    BigInt right({0xe2b272a002612fe3UL, 0xd1ec655e5e2e3d38UL, 0x9b441de072fb0947UL, 0x3be20d403990b69aUL, 0x59ef9d370c298296UL});
+    BigInt result = left + right;
+    check_contents(result, {0xe2b272a002612fe4UL, 0xd1ec655e5e2e3d38UL, 0x9b441de072fb0947UL, 0x3be20d403990b69aUL, 0x59ef9d370c298296UL});
+    ASSERT(!result.is_negative());
+}
 void test_sub_1(TestObjs *objs) {
   // very basic tests for subtraction
 
@@ -414,6 +448,24 @@ void test_is_bit_set_2(TestObjs *) {
   }
 }
 
+void test_is_bit_set_custom(TestObjs *) {
+  //testing bit set with BigInt value 0
+  {
+    //tests whether the 0 gives all false;
+    BigInt val({0x0000UL});
+    ASSERT(!val.is_bit_set(0));
+    ASSERT(!val.is_bit_set(1));
+    ASSERT(!val.is_bit_set(2));
+  }
+  {
+    //checks bits out of bounds of current
+    BigInt val({0x0UL});
+    ASSERT(!val.is_bit_set(10));
+    ASSERT(!val.is_bit_set(100));
+    ASSERT(!val.is_bit_set(110));
+  }
+
+}
 void test_lshift_1(TestObjs *objs) {
   // Some very basic left shift tests
 

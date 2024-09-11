@@ -260,14 +260,25 @@ BigInt BigInt::operator<<(unsigned n) const
 {
   // Left shift operator
   // check if negative
+  int mod = n;
+  int shifts = 0;
+  if (n >= 64) {
+    mod = n % 64;
+    shifts = n/64;
+  }
   if (this->is_negative()) {
     throw std::invalid_argument("negative number not allowed");
   }
+  
   BigInt shifted = *this;
-  unsigned add = 2<<n;
+  
+  //unsigned add = 2<<mod;
   // shift by continuously adding to itself, effectively multiplying by 2 2^n times
-  for(int i = 0; i < n; i++) {
+  for(int i = 0; i < mod; i++) {
     shifted = shifted + shifted;
+  }
+  for (int i = 0; i < shifts; i++) {
+    shifted.data.insert(shifted.data.begin(), 0);
   }
   return shifted;
 
@@ -276,6 +287,17 @@ BigInt BigInt::operator<<(unsigned n) const
 BigInt BigInt::operator*(const BigInt &rhs) const
 {
   // TODO: implement
+  std::string binary;
+  for (int i = rhs.data.size()-1; i >= 0; i--) {
+    binary += std::bitset<64>(rhs.get_bits(i)).to_string();
+  } 
+  BigInt ans(0);
+  for (uint64_t i = 0; i < binary.length(); i++){
+    if (binary[i] == '1') {
+        ans = ans + (*this << (binary.length()-i-1));
+    }   
+  }
+  return ans;
 }
 
 BigInt BigInt::operator/(const BigInt &rhs) const
@@ -391,9 +413,8 @@ std::string BigInt::to_dec() const
       current /= 10;
     }
     // Add zeros if there are no values
-    //fix this
     if (it != data.end() - 1) {
-      while (temp.length() < 10) {
+      while (temp.length() <= 18) {
         temp += '0';
       }
     }
@@ -406,6 +427,6 @@ std::string BigInt::to_dec() const
   }
   // The decimal string is constructed backwards, so it needs to be reversed
   reverse(ans.begin(),ans.end());
-  
+  std::cout<<ans << "\n";
   return ans;
 }

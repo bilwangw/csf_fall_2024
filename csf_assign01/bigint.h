@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <algorithm>
 #include <iostream>
+#include <bitset>
 
 //! @file
 //! Arbitrary-precision integer data type.
