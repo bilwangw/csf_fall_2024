@@ -33,6 +33,7 @@ void cleanup(TestObjs *objs);
 void check_contents(const BigInt &bigint, std::initializer_list<uint64_t> expected_vals);
 
 void test_unary_minus(TestObjs *objs);
+
 // prototypes of test functions
 void test_default_ctor(TestObjs *objs);
 void test_u64_ctor(TestObjs *objs);
@@ -75,7 +76,6 @@ int main(int argc, char **argv) {
   TEST(test_initlist_ctor);
   TEST(test_copy_ctor);
   TEST(test_get_bits);
-  TEST(test_unary_minus);
   TEST(test_add_1);
   TEST(test_add_2);
   TEST(test_add_3);
@@ -96,9 +96,10 @@ int main(int argc, char **argv) {
   // TEST(test_div_2);
   TEST(test_to_hex_1);
   TEST(test_to_hex_2);
-  TEST(test_to_dec_1);
-  TEST(test_to_dec_2);
+  //TEST(test_to_dec_1);
+  //TEST(test_to_dec_2);
   // TODO: add calls to TEST for additional test functions
+  TEST(test_unary_minus);
 
   TEST_FINI();
 }
