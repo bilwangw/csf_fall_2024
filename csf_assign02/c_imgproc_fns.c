@@ -4,6 +4,8 @@
 #include <assert.h>
 #include "imgproc.h"
 
+#include <stdio.h>
+
 // TODO: define your helper functions here
 uint32_t get_r(struct Image *input_img, int i) {
     return (input_img->data[i] >> 24) % (1<<8);
@@ -79,17 +81,17 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
   int index = 0;
   uint32_t *data = (uint32_t * ) malloc((width) * (height) * sizeof(uint32_t));
 
-  for(int j = 0; j < height; j+=n) {
-    for (int i = 0; i < width; i+=n) {
-      for (int k = 0; k < n; k++) {
-        output_img->data[index]  = input_img->data[i + j*width/n];
+  for(double j = 0; j < height; j+=n) {
+    for (double i = 0; i < width; i+=n) {
+      for (int k = 0; k < (n*n); k+=1) {
+          output_img->data[index + k * width / n * height / n ]  = input_img->data[(int)i * n + (int)j * width];
+          //printf("%d\n", index + k * width / n * height / n);
       }
+      index++;
       // for (int k = 0; k < n*n; k++) { // rounding error probably
       // // 
       //   data[index + k * width/n] = input_img->data[i + j*width/n];
       // }
-      index++;
-      
     }
   }
   // for(int j = 0; j < width * height/n; j++) {
