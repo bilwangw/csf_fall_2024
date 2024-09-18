@@ -79,12 +79,12 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
   int height = input_img->height;
   img_init(output_img, width, height);
   int index = 0;
-  uint32_t *data = (uint32_t * ) malloc((width) * (height) * sizeof(uint32_t));
+  //uint32_t *data = (uint32_t * ) malloc((width) * (height) * sizeof(uint32_t));
 
-  for(double j = 0; j < height; j+=n) {
-    for (double i = 0; i < width; i+=n) {
-      for (int k = 0; k < (n*n); k+=1) {
-          output_img->data[index + k * width / n * height / n ]  = input_img->data[(int)i * n + (int)j * width];
+  for(int j = 0; j < height * n; j+=n) {
+    for (int i = 0; i < width; i+=n) {
+      for (int k = 0; k < (n); k+=1) {
+          output_img->data[index + k * width / n * height]  = input_img->data[i + j * width/n];
           //printf("%d\n", index + k * width / n * height / n);
       }
       index++;
@@ -100,7 +100,7 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
   //     output_img->data[j + i*height] = data[j];
   //   }
   // }
-  free(data);
+  //free(data);
 
 
   return 1;
