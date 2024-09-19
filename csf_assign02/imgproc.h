@@ -63,5 +63,9 @@ void imgproc_grayscale( struct Image *input_img, struct Image *output_img );
 int imgproc_composite( struct Image *base_img, struct Image *overlay_img, struct Image *output_img );
 
 // TODO: add prototypes for your helper functions
+uint32_t get_r(struct Image *input_img, int i);
+uint32_t get_g(struct Image *input_img, int i);
+uint32_t get_b(struct Image *input_img, int i);
+uint32_t get_a(struct Image *input_img, int i);
 
 #endif // IMGPROC_H

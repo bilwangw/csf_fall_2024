@@ -97,7 +97,9 @@ void test_mirror_v_basic( TestObjs *objs );
 void test_tile_basic( TestObjs *objs );
 void test_grayscale_basic( TestObjs *objs );
 void test_composite_basic( TestObjs *objs );
+
 // TODO: add prototypes for additional test functions
+void test_get_red();
 
 int main( int argc, char **argv ) {
   // allow the specific test to execute to be specified as the
@@ -347,4 +349,22 @@ void test_composite_basic( TestObjs *objs ) {
   ASSERT( 0x0000FFFF == objs->smiley_out->data[86] );
   ASSERT( 0x000080FF == objs->smiley_out->data[87] );
 }
+
+//custom tests for helper functions
+void test_get_red() {
+  Picture test_pic = {
+    TEST_COLORS,
+    16, // width
+    2, // height
+    "    mrrrggbc    "
+    "   cmrrrbbgg    "
+  };
+  struct Image *test_img = picture_to_img( &test_pic );
+  img_init(test_img, 2, 2);
+  for (int i = 0; i < 4; i++) {
+    ASSERT(0x000 == get_r(test_img, i));
+  }
+
+}
+
 
