@@ -78,7 +78,8 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
   int width = input_img->width;
   int height = input_img->height;
   img_init(output_img, width, height);
-  int index = 0;
+
+
   //uint32_t *data = (uint32_t * ) malloc((width) * (height) * sizeof(uint32_t));
 
   // for(int j = 0; j < height * n; j+=n) {
@@ -102,18 +103,57 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
   // }
   //free(data);
 
+    // int tileWidth = width / n;
+    // int tileHeight = height / n;
+    // int xExcess = width % n; // Excess pixels for width
+    // int yExcess = height % n; // Excess pixels for height
+
+    // int srcRowSize = width;
+    // int dstRowSize = width;
+
+    // for (int tileRow = 0; tileRow < n; tileRow++) {
+    //     for (int tileCol = 0; tileCol < n; tileCol++) {
+    //         int currentTileWidth = tileWidth + (tileCol < xExcess ? 1 : 0);
+    //         int currentTileHeight = tileHeight + (tileRow < yExcess ? 1 : 0);
+
+    //         // Sample the image for each tile
+    //         for (int y = 0; y < currentTileHeight; y++) {
+    //             for (int x = 0; x < currentTileWidth; x++) {
+    //                 // Get the pixel position in the source image
+    //                 int srcX = (x * n) + tileCol;
+    //                 int srcY = (y * n) + tileRow;
+
+    //                 // Get pixel data from source image
+    //                 int srcIndex = (srcY * srcRowSize) + (srcX);
+
+    //                 // Calculate the position in the output image for the current tile
+    //                 int dstX = tileCol * tileWidth + x + (tileCol < xExcess ? tileCol : xExcess);
+    //                 int dstY = tileRow * tileHeight + y + (tileRow < yExcess ? tileRow : yExcess);
+
+    //                 int dstIndex = (dstY * dstRowSize) + (dstX);
+
+    //                 // Copy pixel to output image
+                    
+    //                 output_img->data[dstIndex] = input_img->data[srcIndex];
+                    
+    //             }
+    //         }
+    //     }
+    // }
   int h_mod = height % n;
   int w_mod = width % n;
   for (int i = 0; i < height; i += n) {
     for (int j = 0; j < width; j += n) {
       // height % n for leftover on height
       // width % n for leftover on width 
-      int w_counter = (i * width)/n;
+      int w_counter = 0;
       int h_counter = 0;
       for (int k = 0; k < n; k++) {
         int add = 0;
         if (k < w_mod) {
           add = 1;
+        } else {
+          add = 0;
         }
         h_counter = 0;
         for (int l = 0; l < n; l++) {
@@ -121,8 +161,8 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
           if (l < h_mod) {
             add2 = 1;
           }
-          output_img->data[(j)/n + w_counter + width * (h_counter)] = input_img->data[j+i*width]; 
-          h_counter += height/n + add2;
+          output_img->data[(j)/n + (i*width)/n + w_counter + width * (h_counter)] = input_img->data[j+i*width]; 
+          h_counter += (height/n) + add2;
         }
         
         w_counter += (width/n) + add;
