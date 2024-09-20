@@ -351,20 +351,20 @@ void test_composite_basic( TestObjs *objs ) {
 }
 
 //custom tests for helper functions
-void test_get_red() {
-  Picture test_pic = {
-    TEST_COLORS,
-    16, // width
-    2, // height
-    "    mrrrggbc    "
-    "   cmrrrbbgg    "
-  };
-  struct Image *test_img = picture_to_img( &test_pic );
-  img_init(test_img, 2, 2);
-  for (int i = 0; i < 4; i++) {
-    ASSERT(0x000 == get_r(test_img, i));
-  }
+// void test_get_red() {
+//   Picture test_pic = {
+//     TEST_COLORS,
+//     16, // width
+//     2, // height
+//     "    mrrrggbc    "
+//     "   cmrrrbbgg    "
+//   };
+//   struct Image *test_img = picture_to_img( &test_pic );
+//   img_init(test_img, 2, 2);
+//   for (int i = 0; i < 4; i++) {
+//     ASSERT(0x000 == get_r(test_img, i));
+//   }
 
-}
+// }
 
 

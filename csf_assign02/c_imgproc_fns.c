@@ -149,8 +149,10 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
       int w_counter = 0;
       int h_counter = 0;
       for (int k = 0; k < n; k++) {
+        int xoffset = 0;
+        int yoffset = 0;
         int add = 0;
-        if (k < w_mod) {
+        if (k < w_mod - 1) {
           add = 1;
         } else {
           add = 0;
@@ -158,10 +160,16 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
         h_counter = 0;
         for (int l = 0; l < n; l++) {
           int add2 = 0;
-          if (l < h_mod) {
+          if (l < h_mod - 1) {
             add2 = 1;
           }
-          output_img->data[(j)/n + (i*width)/n + w_counter + width * (h_counter)] = input_img->data[j+i*width]; 
+          if(k >= w_mod && j >= n && w_mod != 0) {
+            xoffset = 1;
+          }
+          if(l >= h_mod && i >= n && h_mod != 0) {
+            yoffset = 1;
+          }
+          output_img->data[(j)/n + (i*width)/n + w_counter + width * (h_counter)] = input_img->data[j-xoffset*n+(i-yoffset*n)*width]; 
           h_counter += (height/n) + add2;
         }
         
