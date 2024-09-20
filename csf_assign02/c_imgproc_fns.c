@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 // TODO: define your helper functions here
+// helper functions to get rgba values from a pixel, specifying the index
 uint32_t get_r(struct Image *input_img, int i) {
     return (input_img->data[i] >> 24) % (1<<8);
 }
@@ -27,10 +28,11 @@ uint32_t get_a(struct Image *input_img, int i) {
 //   output_img - pointer to the output Image (in which the transformed
 //                pixels should be stored)
 void imgproc_mirror_h( struct Image *input_img, struct Image *output_img ) {
-  // TODO: implement
+  //copy the width and height
   int width = input_img->width;
   int height = input_img->height;
   img_init(output_img, width, height);
+  //assign pixels starting from the right edge of the input to the left edge of the output
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
       output_img->data[i*width+j] = input_img->data[i*width+(width-j-1)];
@@ -46,10 +48,11 @@ void imgproc_mirror_h( struct Image *input_img, struct Image *output_img ) {
 //   output_img - pointer to the output Image (in which the transformed
 //                pixels should be stored)
 void imgproc_mirror_v( struct Image *input_img, struct Image *output_img ) {
-  // TODO: implement
+  // copy the width and height
   int width = input_img->width;
   int height = input_img->height;
   img_init(output_img, width, height);
+  //assign pixels starting from the bottom edge of the input to the top edge of the output
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
       output_img->data[i*width+j] = input_img->data[(height-i-1) * width+j];
@@ -71,7 +74,7 @@ void imgproc_mirror_v( struct Image *input_img, struct Image *output_img ) {
 //     - the output can't be generated because at least one tile would
 //       be empty (i.e., have 0 width or height)
 int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
-  // TODO: implement
+  // check if there would be empty tiles or if n is less than one
   if (n < 1 || n > input_img->width || n > input_img->height) {
     return 0;
   }
@@ -79,79 +82,23 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
   int height = input_img->height;
   img_init(output_img, width, height);
 
-
-  //uint32_t *data = (uint32_t * ) malloc((width) * (height) * sizeof(uint32_t));
-
-  // for(int j = 0; j < height * n; j+=n) {
-  //   for (int i = 0; i < width; i+=n) {
-  //     for (int k = 0; k < (n); k+=1) {
-  //         output_img->data[index + k * width / n * height]  = input_img->data[i + j * width/n];
-  //         //printf("%d\n", index + k * width / n * height / n);
-  //     }
-  //     index++;
-  //     // for (int k = 0; k < n*n; k++) { // rounding error probably
-  //     // // 
-  //     //   data[index + k * width/n] = input_img->data[i + j*width/n];
-  //     // }
-  //   }
-  // }
-  // for(int j = 0; j < width * height/n; j++) {
-  //   //output_img->data[j] = data[j];
-  //   for (int i = 0; i < n; i++) {
-  //     output_img->data[j + i*height] = data[j];
-  //   }
-  // }
-  //free(data);
-
-    // int tileWidth = width / n;
-    // int tileHeight = height / n;
-    // int xExcess = width % n; // Excess pixels for width
-    // int yExcess = height % n; // Excess pixels for height
-
-    // int srcRowSize = width;
-    // int dstRowSize = width;
-
-    // for (int tileRow = 0; tileRow < n; tileRow++) {
-    //     for (int tileCol = 0; tileCol < n; tileCol++) {
-    //         int currentTileWidth = tileWidth + (tileCol < xExcess ? 1 : 0);
-    //         int currentTileHeight = tileHeight + (tileRow < yExcess ? 1 : 0);
-
-    //         // Sample the image for each tile
-    //         for (int y = 0; y < currentTileHeight; y++) {
-    //             for (int x = 0; x < currentTileWidth; x++) {
-    //                 // Get the pixel position in the source image
-    //                 int srcX = (x * n) + tileCol;
-    //                 int srcY = (y * n) + tileRow;
-
-    //                 // Get pixel data from source image
-    //                 int srcIndex = (srcY * srcRowSize) + (srcX);
-
-    //                 // Calculate the position in the output image for the current tile
-    //                 int dstX = tileCol * tileWidth + x + (tileCol < xExcess ? tileCol : xExcess);
-    //                 int dstY = tileRow * tileHeight + y + (tileRow < yExcess ? tileRow : yExcess);
-
-    //                 int dstIndex = (dstY * dstRowSize) + (dstX);
-
-    //                 // Copy pixel to output image
-                    
-    //                 output_img->data[dstIndex] = input_img->data[srcIndex];
-                    
-    //             }
-    //         }
-    //     }
-    // }
+  // get the excess pixels if the n does not divide evenly into the image
   int h_mod = height % n;
   int w_mod = width % n;
+  // iterate through the input image and assign the appropriate pixel to the output
+  // to scale down by n times, get every nth pixel in the x and y
   for (int i = 0; i < height; i += n) {
     for (int j = 0; j < width; j += n) {
-      // height % n for leftover on height
-      // width % n for leftover on width 
+      // define variables to handle the offset of the tiles
       int w_counter = 0;
       int h_counter = 0;
+      // k and l iterate to create n * n copies of the image
       for (int k = 0; k < n; k++) {
+        // use xoffset and yoffset to offset the sampled pixels once the excess pixels are used up
         int xoffset = 0;
         int yoffset = 0;
         int add = 0;
+        // check if this tile will have excess pixels on the x axis
         if (k < w_mod - 1) {
           add = 1;
         } else {
@@ -160,23 +107,28 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
         h_counter = 0;
         for (int l = 0; l < n; l++) {
           int add2 = 0;
+          // check if this tile will have excess pixels on the y axis
           if (l < h_mod - 1) {
             add2 = 1;
           }
+          // check if the current tile is outside of the area with excess pixels, adding x and y sampling offsets as necessary
           if(k >= w_mod && j >= n && w_mod != 0) {
             xoffset = 1;
           }
           if(l >= h_mod && i >= n && h_mod != 0) {
             yoffset = 1;
           }
+          // assign the correct pixel value to the output image
           output_img->data[(j)/n + (i*width)/n + w_counter + width * (h_counter)] = input_img->data[j-xoffset*n+(i-yoffset*n)*width]; 
+          // iterate the height offset to reach the next row
           h_counter += (height/n) + add2;
         }
-        
+        // iterate the width offset to reach the next column
         w_counter += (width/n) + add;
       }
     }
   }
+  // return 1 if successful
   return 1;
 }
 
@@ -188,22 +140,13 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
 //   output_img - pointer to the output Image (in which the transformed
 //                pixels should be stored)
 void imgproc_grayscale( struct Image *input_img, struct Image *output_img ) {
-  // TODO: implement
   int width = input_img->width;
   int height = input_img->height;
   img_init(output_img, width, height);
+  // apply formula to convert each pixel to grayscale
   for (int i = 0; i < height*width; i++) {
-    // uint32_t original = input_img->data[i];
-    // uint32_t mod = 1;
-    // mod = mod << 8;
-    // uint32_t a = original % mod;
-    // original = original >> 8;
-    // uint32_t b = original % mod;
-    // original = original >> 8;
-    // uint32_t g = original % mod;
-    // original = original >> 8;
-    // uint32_t r = original % mod;
     uint32_t target = (79 * get_r(input_img, i) + 128 * get_g(input_img, i) + 49 * get_b(input_img, i))/256;
+    // use bitshift to re-encode the rgba values
     output_img->data[i] = (target << 24) + (target << 16) + (target << 8) + get_a(input_img, i);
   }
 }
@@ -221,18 +164,21 @@ void imgproc_grayscale( struct Image *input_img, struct Image *output_img ) {
 //   1 if successful, or 0 if the transformation fails because the base
 //   and overlay image do not have the same dimensions
 int imgproc_composite( struct Image *base_img, struct Image *overlay_img, struct Image *output_img ) {
-  // TODO: implement
+  // check if the dimensions of the two images are the same
   if (base_img->width != overlay_img->width || base_img->height != overlay_img->height) {
     return 0;
   }
   int width = base_img->width;
   int height = base_img->height;
   img_init(output_img, width, height);
+  // add the rgb of the overlay onto the background, intensity based on the alpha value of the overlay, 
+  // using the color blending formula
   for (int i = 0; i < height*width; i++) {
     uint32_t foreground_a = get_a(overlay_img, i);
     uint32_t target_r = (foreground_a * get_r(overlay_img, i) + (255-foreground_a)*get_r(base_img,i))/255;
     uint32_t target_g = (foreground_a * get_g(overlay_img, i) + (255-foreground_a)*get_g(base_img,i))/255;
     uint32_t target_b = (foreground_a * get_b(overlay_img, i) + (255-foreground_a)*get_b(base_img,i))/255;
+    // re-encode rgba values using bit shift
     output_img->data[i] = (target_r << 24) + (target_g << 16) + (target_b << 8) + 255;
   }
   return 1;
