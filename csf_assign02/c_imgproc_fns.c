@@ -81,19 +81,19 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
   int index = 0;
   //uint32_t *data = (uint32_t * ) malloc((width) * (height) * sizeof(uint32_t));
 
-  for(int j = 0; j < height * n; j+=n) {
-    for (int i = 0; i < width; i+=n) {
-      for (int k = 0; k < (n); k+=1) {
-          output_img->data[index + k * width / n * height]  = input_img->data[i + j * width/n];
-          //printf("%d\n", index + k * width / n * height / n);
-      }
-      index++;
-      // for (int k = 0; k < n*n; k++) { // rounding error probably
-      // // 
-      //   data[index + k * width/n] = input_img->data[i + j*width/n];
-      // }
-    }
-  }
+  // for(int j = 0; j < height * n; j+=n) {
+  //   for (int i = 0; i < width; i+=n) {
+  //     for (int k = 0; k < (n); k+=1) {
+  //         output_img->data[index + k * width / n * height]  = input_img->data[i + j * width/n];
+  //         //printf("%d\n", index + k * width / n * height / n);
+  //     }
+  //     index++;
+  //     // for (int k = 0; k < n*n; k++) { // rounding error probably
+  //     // // 
+  //     //   data[index + k * width/n] = input_img->data[i + j*width/n];
+  //     // }
+  //   }
+  // }
   // for(int j = 0; j < width * height/n; j++) {
   //   //output_img->data[j] = data[j];
   //   for (int i = 0; i < n; i++) {
@@ -102,7 +102,33 @@ int imgproc_tile( struct Image *input_img, int n, struct Image *output_img ) {
   // }
   //free(data);
 
-
+  int h_mod = height % n;
+  int w_mod = width % n;
+  for (int i = 0; i < height; i += n) {
+    for (int j = 0; j < width; j += n) {
+      // height % n for leftover on height
+      // width % n for leftover on width 
+      int w_counter = (i * width)/n;
+      int h_counter = 0;
+      for (int k = 0; k < n; k++) {
+        int add = 0;
+        if (k < w_mod) {
+          add = 1;
+        }
+        h_counter = 0;
+        for (int l = 0; l < n; l++) {
+          int add2 = 0;
+          if (l < h_mod) {
+            add2 = 1;
+          }
+          output_img->data[(j)/n + w_counter + width * (h_counter)] = input_img->data[j+i*width]; 
+          h_counter += height/n + add2;
+        }
+        
+        w_counter += (width/n) + add;
+      }
+    }
+  }
   return 1;
 }
 
