@@ -4,6 +4,7 @@
 #include "tctest.h"
 #include "imgproc.h"
 
+#include <stdio.h>
 // An expected color identified by a (non-zero) character code.
 // Used in the "Picture" data type.
 typedef struct {
@@ -117,6 +118,7 @@ int main( int argc, char **argv ) {
   TEST( test_tile_basic );
   TEST( test_grayscale_basic );
   TEST( test_composite_basic );
+  TEST ( test_get_red );
 
   TEST_FINI();
 }
@@ -351,20 +353,27 @@ void test_composite_basic( TestObjs *objs ) {
 }
 
 //custom tests for helper functions
-// void test_get_red() {
-//   Picture test_pic = {
-//     TEST_COLORS,
-//     16, // width
-//     2, // height
-//     "    mrrrggbc    "
-//     "   cmrrrbbgg    "
-//   };
-//   struct Image *test_img = picture_to_img( &test_pic );
-//   img_init(test_img, 2, 2);
-//   for (int i = 0; i < 4; i++) {
-//     ASSERT(0x000 == get_r(test_img, i));
-//   }
-
-// }
-
-
+void test_get_red() {
+  Picture test_pic = {
+    TEST_COLORS,
+    9, // width
+    2, // height
+    "rgmrrrrrr"
+    "cmrrrbbgg"
+  };
+  struct Image *test_img = picture_to_img( &test_pic );
+  img_init(test_img, 16, 2);
+  for (int i = 0; i < 4; i++) {
+    ASSERT(0x000 == get_r(test_img, i));
+  }
+  for (int i = 0; i < 2*9; i++) {
+    printf("colors rgba at %d\n", i);
+    printf("%lu\n", sizeof(test_img->data[i]));
+    printf("%x\n", test_img->data[i]);
+    printf("%x\n", get_r(test_img,i));
+    // printf("%x\n", get_g(test_img,i));
+    // printf("%x\n", get_b(test_img,i));
+    // printf("%x\n", get_a(test_img,i));
+  }
+  ASSERT(0xFF == get_r(test_img, 5));
+}

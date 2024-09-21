@@ -8,6 +8,7 @@
 
 // TODO: define your helper functions here
 // helper functions to get rgba values from a pixel, specifying the index
+// values are obtained by bit shifting to get rid of data on the right, and using modulus to get rid of data on the left
 uint32_t get_r(struct Image *input_img, int i) {
     return (input_img->data[i] >> 24) % (1<<8);
 }
