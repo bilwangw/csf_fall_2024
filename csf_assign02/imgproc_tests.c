@@ -101,6 +101,9 @@ void test_composite_basic( TestObjs *objs );
 
 // TODO: add prototypes for additional test functions
 void test_get_red();
+void test_get_green();
+void test_get_blue();
+void test_get_a();
 
 int main( int argc, char **argv ) {
   // allow the specific test to execute to be specified as the
@@ -119,6 +122,9 @@ int main( int argc, char **argv ) {
   TEST( test_grayscale_basic );
   TEST( test_composite_basic );
   TEST ( test_get_red );
+  TEST( test_get_green );
+  TEST( test_get_blue );
+  TEST( test_get_a );
 
   TEST_FINI();
 }
@@ -362,19 +368,125 @@ void test_get_red() {
     "cmrrrbbgg"
   };
   struct Image *test_img = picture_to_img( &test_pic );
-  img_init(test_img, 16, 2);
-  for (int i = 0; i < 4; i++) {
-    //ASSERT(0x000 == get_r(test_img, i));
+  img_init(test_img, 9, 2);
+  // make sure all r values start out as 0
+  for (int i = 0; i < 18; i++) {
+    ASSERT(0x0 == get_r(test_img, i));
     //get_r(test_img, i);
   }
-  for (int i = 0; i < 2*9; i++) {
-    printf("colors rgba at %d\n", i);
-    printf("%lu\n", sizeof(test_img->data[i]));
-    printf("%x\n", test_img->data[i]);
-    printf("%x\n", get_r(test_img,i));
-    // printf("%x\n", get_g(test_img,i));
-    // printf("%x\n", get_b(test_img,i));
-    // printf("%x\n", get_a(test_img,i));
+  //assign rgb values to pixels and check if get_r works
+  test_img->data[0] = 0xFF0000FF;
+  test_img->data[1] = 0x15001234;
+  test_img->data[12] = 0xFFFF00FF;
+  test_img->data[6] = 0xC50000FF;
+
+  ASSERT(0xFF == get_r(test_img, 0));
+  ASSERT(0x15 == get_r(test_img, 1));
+  ASSERT(0xFF == get_r(test_img, 12));
+  ASSERT(0xC5 == get_r(test_img, 6));
+  //ensuring that changing other pixels won't affect existing ones
+  ASSERT(0x0 == get_r(test_img, 3));
+  // for (int i = 0; i < 2*9; i++) {
+  //   printf("colors rgba at %d\n", i);
+  //   printf("%lu\n", sizeof(test_img->data[i]));
+  //   printf("%x\n", test_img->data[i]);
+  //   //printf("%x\n", get_r(test_img,i));
+  //   // printf("%x\n", get_g(test_img,i));
+  //   // printf("%x\n", get_b(test_img,i));
+  //   // printf("%x\n", get_a(test_img,i));
+  // }
+  //ASSERT(0xFF == get_r(test_img, 5));
+}
+
+void test_get_green() {
+  Picture test_pic = {
+    TEST_COLORS,
+    4, // width
+    4, // height
+    "rgmr"
+    "cmrr"
+    "gggg"
+    "rrrr"
+  };
+  struct Image *test_img = picture_to_img( &test_pic );
+  img_init(test_img, 4, 4);
+  // make sure all r values start out as 0
+  for (int i = 0; i < 16; i++) {
+    ASSERT(0x0 == get_g(test_img, i));
   }
-  ASSERT(0xFF == get_r(test_img, 5));
+  //assign rgb values to pixels and check if get_r works
+  test_img->data[0] = 0xFFFF00FF;
+  test_img->data[1] = 0x15211234;
+  test_img->data[12] = 0xFF1400FF;
+  test_img->data[6] = 0xC50000FF;
+
+  ASSERT(0xFF == get_g(test_img, 0));
+  ASSERT(0x21 == get_g(test_img, 1));
+  ASSERT(0x14 == get_g(test_img, 12));
+  ASSERT(0x00 == get_g(test_img, 6));
+  //ensuring that changing other pixels won't affect existing ones
+  ASSERT(0x0 == get_g(test_img, 3));
+
+}
+
+void test_get_blue() {
+  Picture test_pic = {
+    TEST_COLORS,
+    4, // width
+    4, // height
+    "rgmr"
+    "cmrr"
+    "gggg"
+    "rrrr"
+  };
+  struct Image *test_img = picture_to_img( &test_pic );
+  img_init(test_img, 4, 4);
+  // make sure all r values start out as 0
+  for (int i = 0; i < 16; i++) {
+    ASSERT(0x0 == get_b(test_img, i));
+  }
+  //assign rgb values to pixels and check if get_b works
+  test_img->data[0] = 0xFFFF00FF;
+  test_img->data[1] = 0x15211234;
+  test_img->data[12] = 0xFF14FFFF;
+  test_img->data[6] = 0xC500C2FF;
+
+  ASSERT(0x00 == get_b(test_img, 0));
+  ASSERT(0x12 == get_b(test_img, 1));
+  ASSERT(0xFF == get_b(test_img, 12));
+  ASSERT(0xC2 == get_b(test_img, 6));
+  //ensuring that changing other pixels won't affect existing ones
+  ASSERT(0x0 == get_b(test_img, 3));
+
+}
+
+void test_get_a() {
+  Picture test_pic = {
+    TEST_COLORS,
+    4, // width
+    4, // height
+    "rgmr"
+    "cmrr"
+    "gggg"
+    "rrrr"
+  };
+  struct Image *test_img = picture_to_img( &test_pic );
+  img_init(test_img, 4, 4);
+  // make sure all a values start out as FF
+  for (int i = 0; i < 16; i++) {
+    ASSERT(0xFF == get_a(test_img, i));
+  }
+  //assign rgb values to pixels and check if get_r works
+  test_img->data[0] = 0xFFFF0000;
+  test_img->data[1] = 0x152112CD;
+  test_img->data[12] = 0xFF140021;
+  test_img->data[6] = 0xC50000FF;
+
+  ASSERT(0x00 == get_a(test_img, 0));
+  ASSERT(0xCD == get_a(test_img, 1));
+  ASSERT(0x21 == get_a(test_img, 12));
+  ASSERT(0xFF == get_a(test_img, 6));
+  //ensuring that changing other pixels won't affect existing ones
+  ASSERT(0xFF == get_a(test_img, 3));
+
 }
