@@ -67,5 +67,8 @@ uint32_t get_r(struct Image *input_img, int i);
 uint32_t get_g(struct Image *input_img, int i);
 uint32_t get_b(struct Image *input_img, int i);
 uint32_t get_a(struct Image *input_img, int i);
+uint32_t to_grayscale(struct Image *input_img, int i);
+uint32_t make_pixel(uint32_t r,uint32_t g,uint32_t b,uint32_t a);
+uint32_t to_composite(struct Image *fg, struct Image *bg, int i);
 
 #endif // IMGPROC_H

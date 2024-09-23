@@ -104,6 +104,9 @@ void test_get_red();
 void test_get_green();
 void test_get_blue();
 void test_get_a();
+void test_composite();
+void test_grayscale();
+void test_make_pixel();
 
 int main( int argc, char **argv ) {
   // allow the specific test to execute to be specified as the
@@ -121,10 +124,13 @@ int main( int argc, char **argv ) {
   TEST( test_tile_basic );
   TEST( test_grayscale_basic );
   TEST( test_composite_basic );
-  TEST ( test_get_red );
+  TEST( test_get_red );
   TEST( test_get_green );
   TEST( test_get_blue );
   TEST( test_get_a );
+  TEST( test_grayscale );
+  TEST( test_make_pixel );
+  TEST( test_composite );
 
   TEST_FINI();
 }
@@ -386,16 +392,6 @@ void test_get_red() {
   ASSERT(0xC5 == get_r(test_img, 6));
   //ensuring that changing other pixels won't affect existing ones
   ASSERT(0x0 == get_r(test_img, 3));
-  // for (int i = 0; i < 2*9; i++) {
-  //   printf("colors rgba at %d\n", i);
-  //   printf("%lu\n", sizeof(test_img->data[i]));
-  //   printf("%x\n", test_img->data[i]);
-  //   //printf("%x\n", get_r(test_img,i));
-  //   // printf("%x\n", get_g(test_img,i));
-  //   // printf("%x\n", get_b(test_img,i));
-  //   // printf("%x\n", get_a(test_img,i));
-  // }
-  //ASSERT(0xFF == get_r(test_img, 5));
 }
 
 void test_get_green() {
@@ -490,3 +486,64 @@ void test_get_a() {
   ASSERT(0xFF == get_a(test_img, 3));
 
 }
+
+void test_composite( TestObjs *objs ) {
+  imgproc_composite( objs->smiley, objs->overlay, objs->smiley_out );
+
+  // for all of the fully-transparent pixels in the overlay image,
+  // the result image should have a pixel identical to the corresponding
+  // pixel in the base image
+  
+
+  // check the computed colors for the partially transparent or
+  // fully opaque colors in the overlay image
+  ASSERT( 0xFF0000FF == to_composite(objs->overlay, objs->smiley, 82));
+  ASSERT( 0x800000FF == to_composite(objs->overlay, objs->smiley, 83));
+  ASSERT( 0x00FF00FF == to_composite(objs->overlay, objs->smiley, 84));
+  ASSERT( 0x00807FFF == to_composite(objs->overlay, objs->smiley, 85));
+  ASSERT( 0x0000FFFF == to_composite(objs->overlay, objs->smiley, 86));
+  ASSERT( 0x000080FF == to_composite(objs->overlay, objs->smiley, 87));
+}
+
+
+void test_grayscale() {
+  Picture smiley_grayscale_pic = {
+      TEST_COLORS_GRAYSCALE,
+      16, // width
+      10, // height
+      "    mrrrggbc    "
+      "   c        b   "
+      "  r   r  b   c  "
+      " b            b "
+      " b            r "
+      " g   b    c   r "
+      "  c   ggrb   b  "
+      "   m        c   "
+      "    gggrrbmc    "
+      "                "
+    };
+
+    struct Image *smiley_grayscale_expected = picture_to_img( &smiley_grayscale_pic );
+
+    uint32_t grayed = to_grayscale(smiley_grayscale_expected, 3);
+    ASSERT( grayed == 0x000000FF );
+    grayed = to_grayscale(smiley_grayscale_expected, 4);
+    ASSERT( grayed == 0x7F7F7FFF );
+
+    destroy_img( smiley_grayscale_expected );
+}
+
+void test_make_pixel() {
+  uint32_t pixel = make_pixel(0x34,0x73,0x81,0xFF);
+  ASSERT(pixel == 0x347381FF);
+
+  pixel = make_pixel(0xFF,0xFF,0xFF,0xFF);
+  ASSERT(pixel == 0xFFFFFFFF);
+
+  pixel = make_pixel(0x00,0x00,0x00,0x00);
+  ASSERT(pixel == 0x00000000);
+
+  pixel = make_pixel(0x1,0x5,0x3,0x9);
+  ASSERT(pixel == 0x01050309);
+}
+

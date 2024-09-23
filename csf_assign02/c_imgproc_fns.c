@@ -21,6 +21,27 @@ uint32_t get_b(struct Image *input_img, int i) {
 uint32_t get_a(struct Image *input_img, int i) {
     return (input_img->data[i]) % (1<<8);
 }
+
+// Encode a pixel value from rgba values using bit shift
+uint32_t make_pixel(uint32_t r,uint32_t g,uint32_t b,uint32_t a) {
+  return (r << 24) + (g << 16) + (b << 8) + a;
+}
+
+// Convert a pixel in an image to grayscale, and return the encoded pixel value
+uint32_t to_grayscale(struct Image *input_img, int i) {
+  uint32_t target = (79 * get_r(input_img, i) + 128 * get_g(input_img, i) + 49 * get_b(input_img, i))/256;
+  return make_pixel(target, target, target, get_a(input_img, i));
+}
+
+// Take a pixel in a foreground and background image, and combine them using the given overlay formula, return the encoded pixel value
+uint32_t to_composite(struct Image *fg, struct Image *bg, int i) {
+    uint32_t foreground_a = get_a(fg, i);
+    uint32_t target_r = (foreground_a * get_r(fg, i) + (255-foreground_a)*get_r(bg,i))/255;
+    uint32_t target_g = (foreground_a * get_g(fg, i) + (255-foreground_a)*get_g(bg,i))/255;
+    uint32_t target_b = (foreground_a * get_b(fg, i) + (255-foreground_a)*get_b(bg,i))/255;
+    return make_pixel(target_r, target_g, target_b, 255);
+}
+
 // Mirror input image horizontally.
 // This transformation always succeeds.
 //
@@ -33,7 +54,7 @@ void imgproc_mirror_h( struct Image *input_img, struct Image *output_img ) {
   int width = input_img->width;
   int height = input_img->height;
   img_init(output_img, width, height);
-  //assign pixels starting from the right edge of the input to the left edge of the output
+  // assign pixels starting from the right edge of the input to the left edge of the output
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
       output_img->data[i*width+j] = input_img->data[i*width+(width-j-1)];
@@ -53,7 +74,7 @@ void imgproc_mirror_v( struct Image *input_img, struct Image *output_img ) {
   int width = input_img->width;
   int height = input_img->height;
   img_init(output_img, width, height);
-  //assign pixels starting from the bottom edge of the input to the top edge of the output
+  // assign pixels starting from the bottom edge of the input to the top edge of the output
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
       output_img->data[i*width+j] = input_img->data[(height-i-1) * width+j];
@@ -144,11 +165,9 @@ void imgproc_grayscale( struct Image *input_img, struct Image *output_img ) {
   int width = input_img->width;
   int height = input_img->height;
   img_init(output_img, width, height);
-  // apply formula to convert each pixel to grayscale
+  // iterate through all pixels in the image, applying grayscale function and assign the pixel to the output image
   for (int i = 0; i < height*width; i++) {
-    uint32_t target = (79 * get_r(input_img, i) + 128 * get_g(input_img, i) + 49 * get_b(input_img, i))/256;
-    // use bitshift to re-encode the rgba values
-    output_img->data[i] = (target << 24) + (target << 16) + (target << 8) + get_a(input_img, i);
+    output_img->data[i] = to_grayscale(input_img, i);
   }
 }
 
@@ -172,15 +191,9 @@ int imgproc_composite( struct Image *base_img, struct Image *overlay_img, struct
   int width = base_img->width;
   int height = base_img->height;
   img_init(output_img, width, height);
-  // add the rgb of the overlay onto the background, intensity based on the alpha value of the overlay, 
-  // using the color blending formula
+  // iterate through the image, assigning the generated overlayed pixel to output
   for (int i = 0; i < height*width; i++) {
-    uint32_t foreground_a = get_a(overlay_img, i);
-    uint32_t target_r = (foreground_a * get_r(overlay_img, i) + (255-foreground_a)*get_r(base_img,i))/255;
-    uint32_t target_g = (foreground_a * get_g(overlay_img, i) + (255-foreground_a)*get_g(base_img,i))/255;
-    uint32_t target_b = (foreground_a * get_b(overlay_img, i) + (255-foreground_a)*get_b(base_img,i))/255;
-    // re-encode rgba values using bit shift
-    output_img->data[i] = (target_r << 24) + (target_g << 16) + (target_b << 8) + 255;
+    output_img->data[i] = to_composite(overlay_img, base_img, i);
   }
   return 1;
 }
