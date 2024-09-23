@@ -32,6 +32,9 @@
 	.globl imgproc_mirror_h
 imgproc_mirror_h:
 	/* TODO: implement */
+	/* Store the width and height in r12 and r13 registers */
+	movl 0(%rdi), %r12
+	movl 4(%rdi), %r13
 	ret
 
 /*
