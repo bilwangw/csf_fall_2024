@@ -1,3 +1,7 @@
-TODO: names of team members
+Bill Wang
+Ryan Wu
 
-TODO: contributions of each team member
+Both of us worked together on the functions. One of us would type out the code while both of us
+thought of how to implement it. However, debugging was generally done independently. Ryan 
+implemented the helper function tests. 
+We only made helper functions for getting the rgba values from a pixel.
