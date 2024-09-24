@@ -47,7 +47,7 @@ imgproc_mirror_h:
 	//movq 4(%rdi), %r13 // assign height
 	mov 0(%rdi), %ecx // assign width
 	mov 4(%rdi), %edx // assign height
-	movq 8(%rdi), %r14 // assign pixel value
+	mov 8(%rdi), %r14 // assign pixel value
 
 	//--------------------------------------Pseudocode------------------------------------------
 	// get pixel value and assign it to the other side		                                   |
@@ -57,7 +57,7 @@ imgproc_mirror_h:
 	// 	      assign (-x,y) to (x,y)														   |
 	//------------------------------------------------------------------------------------------
 
-	x_loop_start: // start x loop
+	// Beginnning of xy iterator
 	movl $0, %eax // set x iterator to 0
 
 	x_loop:
@@ -67,11 +67,12 @@ imgproc_mirror_h:
 	// need to do assignment
 	// move rdi pixel at (x + y * width) into rsi pixel at (-x + y * width)
 
-	y_loop_end:
+	inc %ebx // increment y iterator
 	cmpl %edx, %ebx // compare y iterator and height
 	jl y_loop // jump back to start of y_loop if ebx < r13
 
 	x_loop_end:
+	inc %ecx // increment x interator
 	cmpl %ecx, %eax // compare x iterator and width
 	jl x_loop // jump back to start of x_loop if eax < r12
 
