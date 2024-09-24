@@ -28,13 +28,56 @@
  * Parameters:
  *   %rdi - pointer to original struct Image
  *   %rsi - pointer to output struct Image
+ *
+ * Usage:
+ *   %r12 - width
+ *   %r13 - height
+ *	 %eax - x iterator
+ *   %ebx - y iterator
+ *
+ *
+ *
  */
 	.globl imgproc_mirror_h
 imgproc_mirror_h:
 	/* TODO: implement */
 	/* Store the width and height in r12 and r13 registers */
-	movl 0(%rdi), %r12
-	movl 4(%rdi), %r13
+	subq $8, %rsp // allocate stack memory
+	//movq 0(%rdi), %r12 // assign width
+	//movq 4(%rdi), %r13 // assign height
+	mov 0(%rdi), %ecx // assign width
+	mov 4(%rdi), %edx // assign height
+	movq 8(%rdi), %r14 // assign pixel value
+
+	//--------------------------------------Pseudocode------------------------------------------
+	// get pixel value and assign it to the other side		                                   |
+	// use leaq to access specific array xy (it automatically does the i + j * width thing)    |
+	// loop through x																		   |
+	// 	  loop through y																	   |
+	// 	      assign (-x,y) to (x,y)														   |
+	//------------------------------------------------------------------------------------------
+
+	x_loop_start: // start x loop
+	movl $0, %eax // set x iterator to 0
+
+	x_loop:
+	movl $0, %ebx // set y iterator to 0 / reset y loop once it goes through one iteration
+
+	y_loop:
+	// need to do assignment
+	// move rdi pixel at (x + y * width) into rsi pixel at (-x + y * width)
+
+	y_loop_end:
+	cmpl %edx, %ebx // compare y iterator and height
+	jl y_loop // jump back to start of y_loop if ebx < r13
+
+	x_loop_end:
+	cmpl %ecx, %eax // compare x iterator and width
+	jl x_loop // jump back to start of x_loop if eax < r12
+
+
+
+	addq $8, %rsp // free stack memory
 	ret
 
 /*
