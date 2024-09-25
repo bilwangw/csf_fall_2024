@@ -42,7 +42,7 @@
 
 imgproc_mirror_h:
 	/* TODO: implement */
-	subq $8, %rsp // allocate stack memory
+	subq $128, %rsp // allocate stack memory
 	mov 0(%rdi), %ecx // assign width
 	mov 4(%rdi), %edx // assign height
 	//mov 8(%rdi), %r14d // assign pixel value
@@ -61,35 +61,31 @@ imgproc_mirror_h:
 	mov 8(%rdi), %r13d // move address of input image pixel into r13 (r13 = pixel array start address)
 	mov 8(%rsi), %r8d // move address of output image pixel into r8 (r8 = output pixel start address)
 	lea (%r8d, %ecx, 4), %r9d // set r9 to row width of the output pixel (r9 = output pixel start + width)
-	sub $1,%r9d // subtract 1 from r9
 
 
 	x_loop:
 	movl $0, %ebx // set y iterator to 0 / reset y loop once it goes through one iteration
 	mov $0, %r14d // set y coordinate to 0
 	add $4, %r13d // move pixel address by desired amount (r13 address += 1 pixel)
-	sub $1,%r9d
+	sub $1, %r9d // decrement output address by 1 each time
 
 	y_loop:
 	// need to do assignment
 	// move rdi pixel at (x + y * width) into rsi pixel at ((width - 1 - x) + y * width)
 	lea (%r13d,%r14d,4), %r15d // store the pixel address in r15 (r13 address + y * width)
-	mov %r15d, %r9d // assign the pixel value at r15 (input pixel) to r16 (output pixel) (r18 = r15)
-	
+	mov %r15d, %r9d // assign the pixel value at r15 (input pixel) to r9 (output pixel) (r9 = r15)
 
 	inc %ebx // increment y iterator
-	cmpl %edx, %ebx // compare y iterator and height
+	cmp %edx, %ebx // compare y iterator and height
 	jl y_loop // jump back to start of y_loop if ebx < edx
 	add %ecx, %r14d // add width to y coordinate, moving down a row each time
 
 	x_loop_end:
 	inc %ecx // increment x interator
-	cmpl %ecx, %eax // compare x iterator and width
+	cmp %ecx, %eax // compare x iterator and width
 	jl x_loop // jump back to start of x_loop if eax < ecx
 
-
-
-	addq $8, %rsp // free stack memory
+	addq $128, %rsp // free stack memory
 	ret
 
 /*
