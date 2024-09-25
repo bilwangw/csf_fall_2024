@@ -2,7 +2,7 @@
 
 	.section .rodata
 sHelloMsg: .string "Hello, world\n"
-
+numFormat: .string "%u\n"
 	.section .text
 
 	.globl main
@@ -10,12 +10,13 @@ main:
 	subq $8, %rsp
     mov $1, %r12
     .forloop:
-        inc %r12
-	    //mov %r12, %rdi
-        mov $sHelloMsg, %rdi
+	    mov %r12, %rsi
+        mov $numFormat, %rdi
         call printf
         cmp $10, %r12
-        jg .end
+        
+        jge .end
+        inc %r12
         jmp .forloop
     .end:
 	    movl $0, %eax
