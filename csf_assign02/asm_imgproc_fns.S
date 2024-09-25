@@ -39,15 +39,14 @@
  *
  */
 	.globl imgproc_mirror_h
+
 imgproc_mirror_h:
 	/* TODO: implement */
-	/* Store the width and height in r12 and r13 registers */
 	subq $8, %rsp // allocate stack memory
-	//movq 0(%rdi), %r12 // assign width
-	//movq 4(%rdi), %r13 // assign height
 	mov 0(%rdi), %ecx // assign width
 	mov 4(%rdi), %edx // assign height
-	mov 8(%rdi), %r14 // assign pixel value
+	//mov 8(%rdi), %r14d // assign pixel value
+
 
 	//--------------------------------------Pseudocode------------------------------------------
 	// get pixel value and assign it to the other side		                                   |
@@ -59,22 +58,34 @@ imgproc_mirror_h:
 
 	// Beginnning of xy iterator
 	movl $0, %eax // set x iterator to 0
+	mov 8(%rdi), %r13d // move address of input image pixel into r13 (r13 = pixel array start address)
+	mov 8(%rsi), %r8d // move address of output image pixel into r8 (r8 = output pixel start address)
+	lea (%r8d, %ecx, 4), %r9d // set r9 to row width of the output pixel (r9 = output pixel start + width)
+	sub $1,%r9d // subtract 1 from r9
+
 
 	x_loop:
 	movl $0, %ebx // set y iterator to 0 / reset y loop once it goes through one iteration
+	mov $0, %r14d // set y coordinate to 0
+	add $4, %r13d // move pixel address by desired amount (r13 address += 1 pixel)
+	sub $1,%r9d
 
 	y_loop:
 	// need to do assignment
-	// move rdi pixel at (x + y * width) into rsi pixel at (-x + y * width)
+	// move rdi pixel at (x + y * width) into rsi pixel at ((width - 1 - x) + y * width)
+	lea (%r13d,%r14d,4), %r15d // store the pixel address in r15 (r13 address + y * width)
+	mov %r15d, %r9d // assign the pixel value at r15 (input pixel) to r16 (output pixel) (r18 = r15)
+	
 
 	inc %ebx // increment y iterator
 	cmpl %edx, %ebx // compare y iterator and height
-	jl y_loop // jump back to start of y_loop if ebx < r13
+	jl y_loop // jump back to start of y_loop if ebx < edx
+	add %ecx, %r14d // add width to y coordinate, moving down a row each time
 
 	x_loop_end:
 	inc %ecx // increment x interator
 	cmpl %ecx, %eax // compare x iterator and width
-	jl x_loop // jump back to start of x_loop if eax < r12
+	jl x_loop // jump back to start of x_loop if eax < ecx
 
 
 
