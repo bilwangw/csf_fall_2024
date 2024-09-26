@@ -39,8 +39,6 @@
  *	 %eax - x iterator
  *   %ebx - y iterator
  *
- *
- *
  */
 	.globl imgproc_mirror_h
 
@@ -63,27 +61,82 @@ imgproc_mirror_h:
  	*   -24(%rbp) - first element in column
  	*   -32(%rbp) - column
  	*/
+
+	/*--------------------------------------Pseudocode------------------------------------------
+
+	indexing math:
+	(output pixel array start address + (4 * width - 4 * x) + width * y)
+	(input pixel array start address + 4 * x + 4 * width * y)
+	allocate stack memory
+
+	get width
+	get height
+
+	set x iterator to 0
+	start the xy loop
+		x loop:
+			set y iterator to 0
+			put input start address into IN // start doing math for indexing
+			add 4 * x to IN
+			put output start address into OUT // mirrored x pixel for output
+			add 4 * width to OUT
+			subtract 4 * x from OUT
+			y loop:
+				add 4 * width to IN // add the y offset
+				add 4 * width to OUT
+				get the value at address IN and put that value into the value at address OUT
+				increment y iterator
+				check if y iterator is out of bounds
+				jump back to y loop if in bounds
+		x loop end:
+			increment x iterator
+			check if x iterator is out of bounds
+			jump back to x loop if in bounds
+
+
+									   
+	------------------------------------------------------------------------------------------*/
+
 	subq $8, %rsp // allocate stack memory
-	mov 0(%rdi), %r14d // assign width to %r12
-	mov 4(%rdi), %r15d // assign height %r15
+	mov 0(%rdi), %r14 // assign width to %r12
+	mov 4(%rdi), %r15 // assign height %r15
+
+	mov $0, %rax // x iterator to 0
+	x_loop:
+	mov $0, %rbx // y iterator to 0
+	lea 8(%rdi), %r12 // move address of input image pixel into r12
+	mov %rax, %rdx // getting 4 * x
+	mulq $4, %rdx
+	add $rdx, %r12 // r12(input pixel address) + 4 * x
+	lea 8(%rsi), %r13 // move address of output image pixel into r13
+	mov %r14, %rdx // getting 4 * width
+	mulq $4, %rdx
+	add %rdx, %r13  // r13(output pixel address) + 4 * width
+	mov %rax, %rdx
+	mulq $4, %rdx
+	sub $rdx, $r13 // r13(output pixel address) - 4 * x
+
+	y_loop:
+		lea (%r12,%r14,4), %r8 // offset y coordinate of input pixel
+		lea %r8, %r12
+		lea (%r13,%r14,4), %r8 // offset y coordinate of output pixel
+		lea %r8, %r13
+		mov %r12, (%r13) // move the VALUE at r12 into r13?????
+		inc %rbx
+		cmp %r15, %rbx // check if y iterator is out of bounds
+		jl y_loop // if not, continue looping
+
+	x_loop_end:
+		inc %rax // increment x iterator
+		cmp %r14, %rax // check if x iterator is out of bounds
+		jl x_loop // if not, continue looping
+	addq $8, %rsp
+	ret
 	
-	lea 8(%rdi), %r13 // move address of input image pixel into r13
-	lea 8(%rsi), %r12 // move address of output image pixel into r12
 	
-	//mov %r12, %rsi
-	//movq $dimFormat, %rdi
-	//call printf
-
-
-	//mov 8(%rdi), %r14d // assign pixel value
-
-	//--------------------------------------Pseudocode------------------------------------------
-	// get pixel value and assign it to the other side		                                   |
-	// use leaq to access specific array xy (it automatically does the i + j * width thing)    |
-	// loop through x																		   |
-	// 	  loop through y																	   |
-	// 	      assign (-x,y) to (x,y)														   |
-	//------------------------------------------------------------------------------------------
+	
+	
+	/*----------- Commented out old code
 
 	// Beginnning of xy iterator
 
@@ -100,7 +153,7 @@ imgproc_mirror_h:
 	mov %r9, (%rbx)//move the value into target output location
 
 
-	/*
+	
 	x_loop:
 	movl $0, %ebx // set y iterator to 0 / reset y loop once it goes through one iteration
 	//mov $0, %r14d // set y coordinate to 0
@@ -124,10 +177,11 @@ imgproc_mirror_h:
 	inc %rax // increment x interator
 	cmp %r12d, %eax // compare x iterator and width
 	jl x_loop // jump back to start of x_loop if eax < ecx
-	*/
+	
 	mov $0, %eax
 	addq $8, %rsp // free stack memory
 	ret
+	*/
 
 /*
  * void imgproc_mirror_v( struct Image *input_img, struct Image *output_img );
