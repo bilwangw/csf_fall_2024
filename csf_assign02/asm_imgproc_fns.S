@@ -18,6 +18,7 @@
  * Don't forget to use the .globl directive to make
  * them visible to the test code.
  */
+ .globl get_r
 get_r:
 /* this gets the r value out of the pixel
  * input is just the 32 bit encoded pixel value
@@ -26,36 +27,116 @@ get_r:
  * Parameters:
  *
  * %rdi - input
- * %rsi - output
- *
+ * 
+ * Returns:
+ * %rax
 */
 	push %rdx
 	//get r by right shift 24
-	mov %rdi, %edx // move pixel val into edx
-	shr %24, %edx // right shift 24 bits
-	mov %edx, %rsi // move value into rsi for output
+	mov %edi, %edx // move pixel val into edx
+	shr $24, %edx // right shift 24 bits
+	mov %edx, %eax // move value into rax for output
+	pop %rdx
+	ret
+	
+	
+.globl get_g
+get_g:
+/* this gets the g value out of the pixel
+ * input is just the 32 bit encoded pixel value
+ *
+ *
+ * Parameters:
+ *
+ * %rdi - input
+ * 
+ * Returns:
+ * %rax
+*/
+	push %rdx
+	//get b by left shift 8, right shift 24
+	mov %edi, %edx // move pixel val into edx
+	shl $8, %edx // left shift 8
+	shr $24, %edx // right shift 24 bits
+	mov %edx, %eax // move value into rax for output
 	pop %rdx
 	ret
 
 
-
+.globl get_b
 get_b:
 /* this gets the b value out of the pixel
+ * input is just the 32 bit encoded pixel value
  *
  *
+ * Parameters:
+ *
+ * %rdi - input
+ * 
+ * Returns:
+ * %rax
 */
+	push %rdx
+	//get b by left shift 16, right shift 24
+	mov %edi, %edx // move pixel val into edx
+	shl $16, %edx // left shift 16
+	shr $24, %edx // right shift 24 bits
+	mov %edx, %eax // move value into rax for output
+	pop %rdx
+	ret
 
-get_g:
-/* this gets the g value out of the pixel
- *
- *
-*/
 
+.global get_a
 get_a:
 /* this gets the a value out of the pixel
+ * input is just the 32 bit encoded pixel value
  *
  *
+ * Parameters:
+ *
+ * %rdi - input
+ * 
+ * Returns:
+ * %rax
 */
+	push %rdx
+	//get b by left shift 24, right shift 24
+	mov %edi, %edx // move pixel val into edx
+	shl $24, %edx // left shift 8
+	shr $24, %edx // right shift 24 bits
+	mov %edx, %eax // move value into rax for output
+	pop %rdx
+	ret
+
+.global make_pixel
+make_pixel:
+/* this encodes a pixel value given rgba values
+ *
+ * Parameters:
+ *
+ * %rdi - r
+ * %rsi - g
+ * %rdx - b
+ * %rcx - a
+ *
+ *
+ * Returns:
+ * %rax
+*/
+mov $0, %eax
+shl $24, %rdi
+shl $16, %rsi
+shl $8, %rdx
+add %edi, %eax
+add %esi, %eax
+add %edx, %eax
+add %ecx, %eax
+
+ret
+
+
+.global grayscale
+grayscale:
 
 /*
  * Implementations of API functions
@@ -74,8 +155,8 @@ get_a:
  * Usage:
  *   %r12 - width
  *   %r13 - height
- *	 %eax - x iterator
- *   %ebx - y iterator
+ *	 %ebx - x iterator
+ *   %ecx - y iterator
  *
  */
 	.globl imgproc_mirror_h
@@ -121,7 +202,7 @@ imgproc_mirror_h:
 	shl $2, %edx
 	add %edx, %r13d
 	add $1, %edx
-	mov $0, %eax // y iterator to 0
+	mov $0, %ecx // y iterator to 0
 
 	.y_loop_mir_h:
 		mov $0, %ebx // x iterator to 0
@@ -148,8 +229,8 @@ imgproc_mirror_h:
 			add %edx, %r13d
 
 	.y_loop_end_mir_h:
-		inc %eax // increment y iterator
-		cmp %r15d, %eax // check if y iterator is out of bounds
+		inc %ecx // increment y iterator
+		cmp %r15d, %ecx // check if y iterator is out of bounds
 		jl .y_loop_mir_h // if not, continue looping
 
 	//popq %r8
@@ -157,7 +238,7 @@ imgproc_mirror_h:
 	popq %r12
 	popq %r15
 	popq %r14
-	mov $0, %eax
+	mov $0, %ecx
 	addq $8, %rsp
 	//popq %rbp
 	ret
@@ -219,6 +300,7 @@ imgproc_grayscale:
 	pushq %r15
 	pushq %r12
 	pushq %r13
+	pushq %r11
 	
 	//subq $8, %rsp // allocate stack memory
 	mov 0(%rdi), %r14d // assign width to %r14
@@ -226,33 +308,45 @@ imgproc_grayscale:
 	mov 8(%rdi), %r12 // move address of input image pixel into r12
 	mov 8(%rsi), %r13 // move address of output image pixel into r13
 
-	mov $0, %eax
+	mov $0, %r11d
 	.loop:
 		mov (%r12), %r8d // store value at %r12 into %r8
 		// compute the grayscale transformation
 		//y=(79*r+128*g+49*b)/256
-		//get r by right shift 24
-		mov %r8d, %edx // move pixel val into edx
-		shr $24, %edx // right shift edx by 24 to get r
-		mul $79, %edx
+		mov %r8d, %edi // move pixel val into edi
+
+		call get_g
+		mov %eax, %esi
+		call get_b
+		mov %eax, %edx
+		call get_a
+		mov %eax, %ecx
+		call get_r
+		mov %eax, %edi
+		/*
+ 		* %rdi - r
+		* %rsi - g
+		* %rdx - b
+		* %rcx - a
+		*/
+		call make_pixel
 		mov %r8d, (%r13)
 		add $4, %r12
 		add $4, %r13
 
-		inc %eax
+		inc %r11d
 		mov %r15d, %edx
 		imul %r14d, %edx
 		sub $1, %edx
-		cmp %edx, %eax
+		cmp %edx, %r11d
 		jl .loop
 	
+	//popq $r11d
 	popq %r13
 	popq %r12
 	popq %r15
 	popq %r14
 	mov $0, %eax
-	//addq $8, %rsp
-	//popq %rbp
 	
 	ret
 
