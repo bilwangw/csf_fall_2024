@@ -18,7 +18,44 @@
  * Don't forget to use the .globl directive to make
  * them visible to the test code.
  */
+get_r:
+/* this gets the r value out of the pixel
+ * input is just the 32 bit encoded pixel value
+ *
+ *
+ * Parameters:
+ *
+ * %rdi - input
+ * %rsi - output
+ *
+*/
+	push %rdx
+	//get r by right shift 24
+	mov %rdi, %edx // move pixel val into edx
+	shr %24, %edx // right shift 24 bits
+	mov %edx, %rsi // move value into rsi for output
+	pop %rdx
+	ret
 
+
+
+get_b:
+/* this gets the b value out of the pixel
+ *
+ *
+*/
+
+get_g:
+/* this gets the g value out of the pixel
+ *
+ *
+*/
+
+get_a:
+/* this gets the a value out of the pixel
+ *
+ *
+*/
 
 /*
  * Implementations of API functions
