@@ -19,6 +19,7 @@
  * them visible to the test code.
  */
 
+
 /*
  * Implementations of API functions
  */
@@ -190,7 +191,13 @@ imgproc_grayscale:
 
 	mov $0, %eax
 	.loop:
-		mov (%r12), %r8d
+		mov (%r12), %r8d // store value at %r12 into %r8
+		// compute the grayscale transformation
+		//y=(79*r+128*g+49*b)/256
+		//get r by right shift 24
+		mov %r8d, %edx // move pixel val into edx
+		shr $24, %edx // right shift edx by 24 to get r
+		mul $79, %edx
 		mov %r8d, (%r13)
 		add $4, %r12
 		add $4, %r13
