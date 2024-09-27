@@ -96,22 +96,33 @@ imgproc_mirror_h:
 
 									   
 	------------------------------------------------------------------------------------------*/
-	push %r14
-	push %r15
+	pushq %r14
+	pushq %r15
 	pushq %r12
 	pushq %r13
-	pushq %r8
-	
+	//pushq %r8
+	//movq %rsp, %rbp
 	subq $8, %rsp // allocate stack memory
 	mov 0(%rdi), %r14d // assign width to %r14
 	mov 4(%rdi), %r15d // assign height %r15
-	sub $1, %r14
-	sub $1, %r15
-	lea 8(%rdi), %r12d // move address of input image pixel into r12
-	lea 8(%rsi), %r13d // move address of output image pixel into r13
+	//sub $1, %r14
+	//sub $1, %r15
+	lea 8(%rdi), %r12 // move address of input image pixel into r12
+	lea 8(%rsi), %r13 // move address of output image pixel into r13
 
 	mov $0, %eax // y iterator to 0
+	.loop:
+		inc %eax
+		//mov %r12, %r13
+		mov (%r12), %r8d
+		mov %r8d, (%r13)
+		add $4, %r12
+		add $4, %r13
+		cmp $10, %eax
+		jl .loop
+	
 	// move output pointer to the end of the width
+/*
 	mov %r14d, %edx // getting 4 * width
 	sub $1, %edx
 	shl $2, %edx
@@ -125,15 +136,16 @@ imgproc_mirror_h:
 			
 			mov (%r12), %r8d
 			mov %r8d, (%r13)
-			add $4, %r12d
-			sub $4, %r13d
+			
+			add $4, %r12
+			//sub $4, %r13
+			
 			inc %ebx
 			cmp %r14d, %ebx // check if x iterator is out of bounds
 			jl .x_loop // if not, continue looping
 
 			//add 4 to r12 to get first element of next row
-			add $4, %r12d
-			//mov %r12, %r13 // put it at same place as r12, but add 4*(width-1) to it
+			add $4, %r12
 			mov $0, %edx
 			mov %r14d, %edx // getting 4 * width
 			sub $1, %edx
@@ -144,14 +156,15 @@ imgproc_mirror_h:
 		inc %eax // increment y iterator
 		cmp %r15d, %eax // check if y iterator is out of bounds
 		jl .y_loop // if not, continue looping
-	
-	popq %r8
+*/
+	//popq %r8
 	popq %r13
 	popq %r12
-	pop %r15
-	pop %r14
-
+	popq %r15
+	popq %r14
+	mov $0, %eax
 	addq $8, %rsp
+	//popq %rbp
 	ret
 	
 	
