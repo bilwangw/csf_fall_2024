@@ -96,40 +96,61 @@ imgproc_mirror_h:
 
 									   
 	------------------------------------------------------------------------------------------*/
-
+	push %r14
+	push %r15
+	pushq %r12
+	pushq %r13
+	pushq %r8
+	
 	subq $8, %rsp // allocate stack memory
-	mov 0(%rdi), %r14 // assign width to %r12
-	mov 4(%rdi), %r15 // assign height %r15
+	mov 0(%rdi), %r14d // assign width to %r14
+	mov 4(%rdi), %r15d // assign height %r15
+	sub $1, %r14
+	sub $1, %r15
+	lea 8(%rdi), %r12d // move address of input image pixel into r12
+	lea 8(%rsi), %r13d // move address of output image pixel into r13
 
-	mov $0, %rax // x iterator to 0
-	x_loop:
-	mov $0, %rbx // y iterator to 0
-	lea 8(%rdi), %r12 // move address of input image pixel into r12
-	mov %rax, %rdx // getting 4 * x
-	mulq $4, %rdx
-	add $rdx, %r12 // r12(input pixel address) + 4 * x
-	lea 8(%rsi), %r13 // move address of output image pixel into r13
-	mov %r14, %rdx // getting 4 * width
-	mulq $4, %rdx
-	add %rdx, %r13  // r13(output pixel address) + 4 * width
-	mov %rax, %rdx
-	mulq $4, %rdx
-	sub $rdx, $r13 // r13(output pixel address) - 4 * x
+	mov $0, %eax // y iterator to 0
+	// move output pointer to the end of the width
+	mov %r14d, %edx // getting 4 * width
+	sub $1, %edx
+	shl $2, %edx
+	add %edx, %r13d
+	add $1, %edx
 
-	y_loop:
-		lea (%r12,%r14,4), %r8 // offset y coordinate of input pixel
-		lea %r8, %r12
-		lea (%r13,%r14,4), %r8 // offset y coordinate of output pixel
-		lea %r8, %r13
-		mov %r12, (%r13) // move the VALUE at r12 into r13?????
-		inc %rbx
-		cmp %r15, %rbx // check if y iterator is out of bounds
-		jl y_loop // if not, continue looping
+	.y_loop:
+		mov $0, %ebx // x iterator to 0
 
-	x_loop_end:
-		inc %rax // increment x iterator
-		cmp %r14, %rax // check if x iterator is out of bounds
-		jl x_loop // if not, continue looping
+		.x_loop:
+			
+			mov (%r12), %r8d
+			mov %r8d, (%r13)
+			add $4, %r12d
+			sub $4, %r13d
+			inc %ebx
+			cmp %r14d, %ebx // check if x iterator is out of bounds
+			jl .x_loop // if not, continue looping
+
+			//add 4 to r12 to get first element of next row
+			add $4, %r12d
+			//mov %r12, %r13 // put it at same place as r12, but add 4*(width-1) to it
+			mov $0, %edx
+			mov %r14d, %edx // getting 4 * width
+			sub $1, %edx
+			shl $3, %edx
+			add %edx, %r13d
+
+	.y_loop_end:
+		inc %eax // increment y iterator
+		cmp %r15d, %eax // check if y iterator is out of bounds
+		jl .y_loop // if not, continue looping
+	
+	popq %r8
+	popq %r13
+	popq %r12
+	pop %r15
+	pop %r14
+
 	addq $8, %rsp
 	ret
 	
