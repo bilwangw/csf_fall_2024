@@ -105,12 +105,13 @@ imgproc_mirror_h:
 	subq $8, %rsp // allocate stack memory
 	mov 0(%rdi), %r14d // assign width to %r14
 	mov 4(%rdi), %r15d // assign height %r15
-	//sub $1, %r14
-	//sub $1, %r15
-	lea 8(%rdi), %r12 // move address of input image pixel into r12
-	lea 8(%rsi), %r13 // move address of output image pixel into r13
+	sub $1, %r14
+	sub $1, %r15
+	mov 8(%rdi), %r12 // move address of input image pixel into r12
+	mov 8(%rsi), %r13 // move address of output image pixel into r13
 
 	mov $0, %eax // y iterator to 0
+	/*
 	.loop:
 		inc %eax
 		//mov %r12, %r13
@@ -118,11 +119,11 @@ imgproc_mirror_h:
 		mov %r8d, (%r13)
 		add $4, %r12
 		add $4, %r13
-		cmp $10, %eax
+		cmp $100000, %eax
 		jl .loop
-	
+	*/
 	// move output pointer to the end of the width
-/*
+
 	mov %r14d, %edx // getting 4 * width
 	sub $1, %edx
 	shl $2, %edx
@@ -156,7 +157,7 @@ imgproc_mirror_h:
 		inc %eax // increment y iterator
 		cmp %r15d, %eax // check if y iterator is out of bounds
 		jl .y_loop // if not, continue looping
-*/
+
 	//popq %r8
 	popq %r13
 	popq %r12
