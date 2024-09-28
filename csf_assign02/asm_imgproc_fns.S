@@ -137,6 +137,39 @@ ret
 
 .global grayscale
 grayscale:
+/* this encodes a pixel value given rgba values
+ *
+ * Parameters:
+ *
+ * %rdi - pixel value
+ *
+ *
+ * Returns:
+ * %rax
+*/
+call get_g
+mov %eax, %esi
+call get_b
+mov %eax, %edx
+call get_a
+mov %eax, %ecx
+call get_r
+mov %eax, %edi
+// y=(79*r+128*g+49*b)/256
+imul $79, %edi
+imul $128, %esi
+imul $49, %edx
+mov $0, %ebx
+add %edi, %ebx
+add %esi, %ebx
+add %edx, %ebx
+shr $8, %ebx // math done
+mov %ebx, %eax 
+mov %eax, %edi
+mov %eax, %esi
+mov %eax, %edx
+call make_pixel // encode into pixel
+ret
 
 /*
  * Implementations of API functions
@@ -201,7 +234,7 @@ imgproc_mirror_h:
 	sub $1, %edx
 	shl $2, %edx
 	add %edx, %r13d
-	add $1, %edx
+	//add $1, %edx
 	mov $0, %ecx // y iterator to 0
 
 	.y_loop_mir_h:
@@ -220,12 +253,12 @@ imgproc_mirror_h:
 			jl .x_loop_mir_h // if not, continue looping
 			//if reached end of row:
 			//add 4 to r12 to get first element of next row
-			add $4, %r12
+			//add $4, %r12
 			mov $0, %edx
 			// add 2 * 4 * width to move the output to the end of the next row
 			mov %r14d, %edx // edx = width
 			shl $3, %edx // edx * 2^3
-			sub $4, %edx // edx -= 4
+			//sub $4, %edx // edx -= 4
 			add %edx, %r13d
 
 	.y_loop_end_mir_h:
@@ -256,8 +289,90 @@ imgproc_mirror_h:
  */
 	.globl imgproc_mirror_v
 imgproc_mirror_v:
-	/* TODO: implement */
+	/*
+	 * Register use:
+	*	%r10d - row index input
+	*	%r11d - row index output
+ 	*   %r12 - pointer to output Image
+ 	*   %r13 - pointer to source Image
+ 	*   %r14d - width
+ 	*   %r15d - height
+ 	*   %ebx - something else
+ 	*
+	* Memory use:
+ 	*   -8(%rbp) - pixel value of input
+ 	*   -16(%rbp) - address output pixel location
+ 	*   -12(%rbp) - 
+ 	*   -16(%rbp) - 
+ 	*   -24(%rbp) - first element in column
+ 	*   -32(%rbp) - column
+ 	*/
+
+	pushq %r14
+	pushq %r15
+	pushq %r12
+	pushq %r13
+	//pushq %r8
+	//movq %rsp, %rbp
+	subq $8, %rsp // allocate stack memory
+	mov 0(%rdi), %r14d // assign width to %r14
+	mov 4(%rdi), %r15d // assign height %r15
+	//sub $1, %r14 // subtract 1 to prevent overflow
+	//sub $1, %r15 // subtract 1 to prevent overflow
+	mov 8(%rdi), %r12 // move address of input image pixel into r12
+	mov 8(%rsi), %r13 // move address of output image pixel into r13
+
+	// move output pointer to the end of the width
+
+
+	mov %r14d, %edx
+	imul %r15d, %edx
+	sub %r15d, %edx
+	shl $2, %edx
+	add %edx, %r13d
+
+	mov $0, %ecx // y iterator to 0
+
+	.y_loop_mir_v:
+		mov $0, %ebx // x iterator to 0
+
+		.x_loop_mir_v:
+			
+			mov (%r12), %r8d
+			mov %r8d, (%r13)
+			
+			add $4, %r12 // increment input address
+			add $4, %r13 // increment output address
+			
+			inc %ebx
+			cmp %r14d, %ebx // check if x iterator is out of bounds
+			jl .x_loop_mir_v // if not, continue looping
+			//sub $4, %r12
+			sub $4, %r13
+			//if reached end of row:
+			mov $0, %edx
+			// subtact 2 * 4 * width + 4to go up a row for the output
+			mov %r14d, %edx // edx = width
+			shl $3, %edx // edx * 2^2
+			sub $4, %edx
+			//sub $4, %edx // edx -= 4
+			sub %edx, %r13d
+
+	.y_loop_end_mir_v:
+		inc %ecx // increment y iterator
+		cmp %r15d, %ecx // check if y iterator is out of bounds
+		jl .y_loop_mir_v // if not, continue looping
+
+	//popq %r8
+	popq %r13
+	popq %r12
+	popq %r15
+	popq %r14
+	mov $0, %ecx
+	addq $8, %rsp
+	//popq %rbp
 	ret
+
 
 /*
  * int imgproc_tile( struct Image *input_img, int n, struct Image *output_img );
@@ -300,9 +415,8 @@ imgproc_grayscale:
 	pushq %r15
 	pushq %r12
 	pushq %r13
-	pushq %r11
+	//push %r11
 	
-	//subq $8, %rsp // allocate stack memory
 	mov 0(%rdi), %r14d // assign width to %r14
 	mov 4(%rdi), %r15d // assign height %r15
 	mov 8(%rdi), %r12 // move address of input image pixel into r12
@@ -314,34 +428,20 @@ imgproc_grayscale:
 		// compute the grayscale transformation
 		//y=(79*r+128*g+49*b)/256
 		mov %r8d, %edi // move pixel val into edi
-
-		call get_g
-		mov %eax, %esi
-		call get_b
-		mov %eax, %edx
-		call get_a
-		mov %eax, %ecx
-		call get_r
-		mov %eax, %edi
-		/*
- 		* %rdi - r
-		* %rsi - g
-		* %rdx - b
-		* %rcx - a
-		*/
-		call make_pixel
-		mov %r8d, (%r13)
+		call grayscale
+		mov %eax, (%r13)
+		//mov %r8d, (%r13)
 		add $4, %r12
 		add $4, %r13
 
 		inc %r11d
 		mov %r15d, %edx
 		imul %r14d, %edx
-		sub $1, %edx
+		//sub $1, %edx
 		cmp %edx, %r11d
 		jl .loop
 	
-	//popq $r11d
+	//pop $r11
 	popq %r13
 	popq %r12
 	popq %r15

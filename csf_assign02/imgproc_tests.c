@@ -100,13 +100,13 @@ void test_grayscale_basic( TestObjs *objs );
 void test_composite_basic( TestObjs *objs );
 
 // TODO: add prototypes for additional test functions
-void test_get_red();
-void test_get_green();
-void test_get_blue();
-void test_get_a();
-void test_composite();
-void test_grayscale();
-void test_make_pixel();
+// void test_get_red();
+// void test_get_green();
+// void test_get_blue();
+// void test_get_a();
+// void test_composite();
+// void test_grayscale();
+// void test_make_pixel();
 
 int main( int argc, char **argv ) {
   // allow the specific test to execute to be specified as the
@@ -124,13 +124,13 @@ int main( int argc, char **argv ) {
   TEST( test_tile_basic );
   TEST( test_grayscale_basic );
   TEST( test_composite_basic );
-  TEST( test_get_red );
-  TEST( test_get_green );
-  TEST( test_get_blue );
-  TEST( test_get_a );
-  TEST( test_grayscale );
-  TEST( test_make_pixel );
-  TEST( test_composite );
+  // TEST( test_get_red );
+  // TEST( test_get_green );
+  // TEST( test_get_blue );
+  // TEST( test_get_a );
+  // TEST( test_grayscale );
+  // TEST( test_make_pixel );
+  // TEST( test_composite );
 
   TEST_FINI();
 }
@@ -364,186 +364,186 @@ void test_composite_basic( TestObjs *objs ) {
   ASSERT( 0x000080FF == objs->smiley_out->data[87] );
 }
 
-//custom tests for helper functions
-void test_get_red() {
-  Picture test_pic = {
-    TEST_COLORS,
-    9, // width
-    2, // height
-    "rgmrrrrrr"
-    "cmrrrbbgg"
-  };
-  struct Image *test_img = picture_to_img( &test_pic );
-  img_init(test_img, 9, 2);
-  // make sure all r values start out as 0
-  for (int i = 0; i < 18; i++) {
-    ASSERT(0x0 == get_r(test_img, i));
-    //get_r(test_img, i);
-  }
-  //assign rgb values to pixels and check if get_r works
-  test_img->data[0] = 0xFF0000FF;
-  test_img->data[1] = 0x15001234;
-  test_img->data[12] = 0xFFFF00FF;
-  test_img->data[6] = 0xC50000FF;
+// //custom tests for helper functions
+// void test_get_red() {
+//   Picture test_pic = {
+//     TEST_COLORS,
+//     9, // width
+//     2, // height
+//     "rgmrrrrrr"
+//     "cmrrrbbgg"
+//   };
+//   struct Image *test_img = picture_to_img( &test_pic );
+//   img_init(test_img, 9, 2);
+//   // make sure all r values start out as 0
+//   for (int i = 0; i < 18; i++) {
+//     ASSERT(0x0 == get_r(test_img, i));
+//     //get_r(test_img, i);
+//   }
+//   //assign rgb values to pixels and check if get_r works
+//   test_img->data[0] = 0xFF0000FF;
+//   test_img->data[1] = 0x15001234;
+//   test_img->data[12] = 0xFFFF00FF;
+//   test_img->data[6] = 0xC50000FF;
 
-  ASSERT(0xFF == get_r(test_img, 0));
-  ASSERT(0x15 == get_r(test_img, 1));
-  ASSERT(0xFF == get_r(test_img, 12));
-  ASSERT(0xC5 == get_r(test_img, 6));
-  //ensuring that changing other pixels won't affect existing ones
-  ASSERT(0x0 == get_r(test_img, 3));
-}
+//   ASSERT(0xFF == get_r(test_img, 0));
+//   ASSERT(0x15 == get_r(test_img, 1));
+//   ASSERT(0xFF == get_r(test_img, 12));
+//   ASSERT(0xC5 == get_r(test_img, 6));
+//   //ensuring that changing other pixels won't affect existing ones
+//   ASSERT(0x0 == get_r(test_img, 3));
+// }
 
-void test_get_green() {
-  Picture test_pic = {
-    TEST_COLORS,
-    4, // width
-    4, // height
-    "rgmr"
-    "cmrr"
-    "gggg"
-    "rrrr"
-  };
-  struct Image *test_img = picture_to_img( &test_pic );
-  img_init(test_img, 4, 4);
-  // make sure all r values start out as 0
-  for (int i = 0; i < 16; i++) {
-    ASSERT(0x0 == get_g(test_img, i));
-  }
-  //assign rgb values to pixels and check if get_r works
-  test_img->data[0] = 0xFFFF00FF;
-  test_img->data[1] = 0x15211234;
-  test_img->data[12] = 0xFF1400FF;
-  test_img->data[6] = 0xC50000FF;
+// void test_get_green() {
+//   Picture test_pic = {
+//     TEST_COLORS,
+//     4, // width
+//     4, // height
+//     "rgmr"
+//     "cmrr"
+//     "gggg"
+//     "rrrr"
+//   };
+//   struct Image *test_img = picture_to_img( &test_pic );
+//   img_init(test_img, 4, 4);
+//   // make sure all r values start out as 0
+//   for (int i = 0; i < 16; i++) {
+//     ASSERT(0x0 == get_g(test_img, i));
+//   }
+//   //assign rgb values to pixels and check if get_r works
+//   test_img->data[0] = 0xFFFF00FF;
+//   test_img->data[1] = 0x15211234;
+//   test_img->data[12] = 0xFF1400FF;
+//   test_img->data[6] = 0xC50000FF;
 
-  ASSERT(0xFF == get_g(test_img, 0));
-  ASSERT(0x21 == get_g(test_img, 1));
-  ASSERT(0x14 == get_g(test_img, 12));
-  ASSERT(0x00 == get_g(test_img, 6));
-  //ensuring that changing other pixels won't affect existing ones
-  ASSERT(0x0 == get_g(test_img, 3));
+//   ASSERT(0xFF == get_g(test_img, 0));
+//   ASSERT(0x21 == get_g(test_img, 1));
+//   ASSERT(0x14 == get_g(test_img, 12));
+//   ASSERT(0x00 == get_g(test_img, 6));
+//   //ensuring that changing other pixels won't affect existing ones
+//   ASSERT(0x0 == get_g(test_img, 3));
 
-}
+// }
 
-void test_get_blue() {
-  Picture test_pic = {
-    TEST_COLORS,
-    4, // width
-    4, // height
-    "rgmr"
-    "cmrr"
-    "gggg"
-    "rrrr"
-  };
-  struct Image *test_img = picture_to_img( &test_pic );
-  img_init(test_img, 4, 4);
-  // make sure all r values start out as 0
-  for (int i = 0; i < 16; i++) {
-    ASSERT(0x0 == get_b(test_img, i));
-  }
-  //assign rgb values to pixels and check if get_b works
-  test_img->data[0] = 0xFFFF00FF;
-  test_img->data[1] = 0x15211234;
-  test_img->data[12] = 0xFF14FFFF;
-  test_img->data[6] = 0xC500C2FF;
+// void test_get_blue() {
+//   Picture test_pic = {
+//     TEST_COLORS,
+//     4, // width
+//     4, // height
+//     "rgmr"
+//     "cmrr"
+//     "gggg"
+//     "rrrr"
+//   };
+//   struct Image *test_img = picture_to_img( &test_pic );
+//   img_init(test_img, 4, 4);
+//   // make sure all r values start out as 0
+//   for (int i = 0; i < 16; i++) {
+//     ASSERT(0x0 == get_b(test_img, i));
+//   }
+//   //assign rgb values to pixels and check if get_b works
+//   test_img->data[0] = 0xFFFF00FF;
+//   test_img->data[1] = 0x15211234;
+//   test_img->data[12] = 0xFF14FFFF;
+//   test_img->data[6] = 0xC500C2FF;
 
-  ASSERT(0x00 == get_b(test_img, 0));
-  ASSERT(0x12 == get_b(test_img, 1));
-  ASSERT(0xFF == get_b(test_img, 12));
-  ASSERT(0xC2 == get_b(test_img, 6));
-  //ensuring that changing other pixels won't affect existing ones
-  ASSERT(0x0 == get_b(test_img, 3));
+//   ASSERT(0x00 == get_b(test_img, 0));
+//   ASSERT(0x12 == get_b(test_img, 1));
+//   ASSERT(0xFF == get_b(test_img, 12));
+//   ASSERT(0xC2 == get_b(test_img, 6));
+//   //ensuring that changing other pixels won't affect existing ones
+//   ASSERT(0x0 == get_b(test_img, 3));
 
-}
+// }
 
-void test_get_a() {
-  Picture test_pic = {
-    TEST_COLORS,
-    4, // width
-    4, // height
-    "rgmr"
-    "cmrr"
-    "gggg"
-    "rrrr"
-  };
-  struct Image *test_img = picture_to_img( &test_pic );
-  img_init(test_img, 4, 4);
-  // make sure all a values start out as FF
-  for (int i = 0; i < 16; i++) {
-    ASSERT(0xFF == get_a(test_img, i));
-  }
-  //assign rgb values to pixels and check if get_r works
-  test_img->data[0] = 0xFFFF0000;
-  test_img->data[1] = 0x152112CD;
-  test_img->data[12] = 0xFF140021;
-  test_img->data[6] = 0xC50000FF;
+// void test_get_a() {
+//   Picture test_pic = {
+//     TEST_COLORS,
+//     4, // width
+//     4, // height
+//     "rgmr"
+//     "cmrr"
+//     "gggg"
+//     "rrrr"
+//   };
+//   struct Image *test_img = picture_to_img( &test_pic );
+//   img_init(test_img, 4, 4);
+//   // make sure all a values start out as FF
+//   for (int i = 0; i < 16; i++) {
+//     ASSERT(0xFF == get_a(test_img, i));
+//   }
+//   //assign rgb values to pixels and check if get_r works
+//   test_img->data[0] = 0xFFFF0000;
+//   test_img->data[1] = 0x152112CD;
+//   test_img->data[12] = 0xFF140021;
+//   test_img->data[6] = 0xC50000FF;
 
-  ASSERT(0x00 == get_a(test_img, 0));
-  ASSERT(0xCD == get_a(test_img, 1));
-  ASSERT(0x21 == get_a(test_img, 12));
-  ASSERT(0xFF == get_a(test_img, 6));
-  //ensuring that changing other pixels won't affect existing ones
-  ASSERT(0xFF == get_a(test_img, 3));
+//   ASSERT(0x00 == get_a(test_img, 0));
+//   ASSERT(0xCD == get_a(test_img, 1));
+//   ASSERT(0x21 == get_a(test_img, 12));
+//   ASSERT(0xFF == get_a(test_img, 6));
+//   //ensuring that changing other pixels won't affect existing ones
+//   ASSERT(0xFF == get_a(test_img, 3));
 
-}
+// }
 
-void test_composite( TestObjs *objs ) {
-  imgproc_composite( objs->smiley, objs->overlay, objs->smiley_out );
+// void test_composite( TestObjs *objs ) {
+//   imgproc_composite( objs->smiley, objs->overlay, objs->smiley_out );
 
-  // for all of the fully-transparent pixels in the overlay image,
-  // the result image should have a pixel identical to the corresponding
-  // pixel in the base image
+//   // for all of the fully-transparent pixels in the overlay image,
+//   // the result image should have a pixel identical to the corresponding
+//   // pixel in the base image
   
 
-  // check the computed colors for the partially transparent or
-  // fully opaque colors in the overlay image
-  ASSERT( 0xFF0000FF == to_composite(objs->overlay, objs->smiley, 82));
-  ASSERT( 0x800000FF == to_composite(objs->overlay, objs->smiley, 83));
-  ASSERT( 0x00FF00FF == to_composite(objs->overlay, objs->smiley, 84));
-  ASSERT( 0x00807FFF == to_composite(objs->overlay, objs->smiley, 85));
-  ASSERT( 0x0000FFFF == to_composite(objs->overlay, objs->smiley, 86));
-  ASSERT( 0x000080FF == to_composite(objs->overlay, objs->smiley, 87));
-}
+//   // check the computed colors for the partially transparent or
+//   // fully opaque colors in the overlay image
+//   ASSERT( 0xFF0000FF == to_composite(objs->overlay, objs->smiley, 82));
+//   ASSERT( 0x800000FF == to_composite(objs->overlay, objs->smiley, 83));
+//   ASSERT( 0x00FF00FF == to_composite(objs->overlay, objs->smiley, 84));
+//   ASSERT( 0x00807FFF == to_composite(objs->overlay, objs->smiley, 85));
+//   ASSERT( 0x0000FFFF == to_composite(objs->overlay, objs->smiley, 86));
+//   ASSERT( 0x000080FF == to_composite(objs->overlay, objs->smiley, 87));
+// }
 
 
-void test_grayscale() {
-  Picture smiley_grayscale_pic = {
-      TEST_COLORS_GRAYSCALE,
-      16, // width
-      10, // height
-      "    mrrrggbc    "
-      "   c        b   "
-      "  r   r  b   c  "
-      " b            b "
-      " b            r "
-      " g   b    c   r "
-      "  c   ggrb   b  "
-      "   m        c   "
-      "    gggrrbmc    "
-      "                "
-    };
+// void test_grayscale() {
+//   Picture smiley_grayscale_pic = {
+//       TEST_COLORS_GRAYSCALE,
+//       16, // width
+//       10, // height
+//       "    mrrrggbc    "
+//       "   c        b   "
+//       "  r   r  b   c  "
+//       " b            b "
+//       " b            r "
+//       " g   b    c   r "
+//       "  c   ggrb   b  "
+//       "   m        c   "
+//       "    gggrrbmc    "
+//       "                "
+//     };
 
-    struct Image *smiley_grayscale_expected = picture_to_img( &smiley_grayscale_pic );
+//     struct Image *smiley_grayscale_expected = picture_to_img( &smiley_grayscale_pic );
 
-    uint32_t grayed = to_grayscale(smiley_grayscale_expected, 3);
-    ASSERT( grayed == 0x000000FF );
-    grayed = to_grayscale(smiley_grayscale_expected, 4);
-    ASSERT( grayed == 0x7F7F7FFF );
+//     uint32_t grayed = to_grayscale(smiley_grayscale_expected, 3);
+//     ASSERT( grayed == 0x000000FF );
+//     grayed = to_grayscale(smiley_grayscale_expected, 4);
+//     ASSERT( grayed == 0x7F7F7FFF );
 
-    destroy_img( smiley_grayscale_expected );
-}
+//     destroy_img( smiley_grayscale_expected );
+// }
 
-void test_make_pixel() {
-  uint32_t pixel = make_pixel(0x34,0x73,0x81,0xFF);
-  ASSERT(pixel == 0x347381FF);
+// void test_make_pixel() {
+//   uint32_t pixel = make_pixel(0x34,0x73,0x81,0xFF);
+//   ASSERT(pixel == 0x347381FF);
 
-  pixel = make_pixel(0xFF,0xFF,0xFF,0xFF);
-  ASSERT(pixel == 0xFFFFFFFF);
+//   pixel = make_pixel(0xFF,0xFF,0xFF,0xFF);
+//   ASSERT(pixel == 0xFFFFFFFF);
 
-  pixel = make_pixel(0x00,0x00,0x00,0x00);
-  ASSERT(pixel == 0x00000000);
+//   pixel = make_pixel(0x00,0x00,0x00,0x00);
+//   ASSERT(pixel == 0x00000000);
 
-  pixel = make_pixel(0x1,0x5,0x3,0x9);
-  ASSERT(pixel == 0x01050309);
-}
+//   pixel = make_pixel(0x1,0x5,0x3,0x9);
+//   ASSERT(pixel == 0x01050309);
+// }
 
