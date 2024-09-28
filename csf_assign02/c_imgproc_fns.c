@@ -9,17 +9,17 @@
 // TODO: define your helper functions here
 // helper functions to get rgba values from a pixel, specifying the index
 // values are obtained by bit shifting to get rid of data on the right, and using modulus to get rid of data on the left
-uint32_t get_r(struct Image *input_img, int i) {
-    return (input_img->data[i] >> 24) % (1<<8);
+uint32_t get_r(uint32_t pixel) {
+    return (pixel >> 24) % (1<<8);
 }
-uint32_t get_g(struct Image *input_img, int i) {
-    return (input_img->data[i] >> 16) % (1<<8);
+uint32_t get_g(uint32_t pixel) {
+    return (pixel >> 16) % (1<<8);
 }
-uint32_t get_b(struct Image *input_img, int i) {
-    return (input_img->data[i] >> 8) % (1<<8);
+uint32_t get_b(uint32_t pixel) {
+    return (pixel >> 8) % (1<<8);
 }
-uint32_t get_a(struct Image *input_img, int i) {
-    return (input_img->data[i]) % (1<<8);
+uint32_t get_a(uint32_t pixel) {
+    return (pixel) % (1<<8);
 }
 
 // Encode a pixel value from rgba values using bit shift
@@ -29,16 +29,16 @@ uint32_t make_pixel(uint32_t r,uint32_t g,uint32_t b,uint32_t a) {
 
 // Convert a pixel in an image to grayscale, and return the encoded pixel value
 uint32_t to_grayscale(struct Image *input_img, int i) {
-  uint32_t target = (79 * get_r(input_img, i) + 128 * get_g(input_img, i) + 49 * get_b(input_img, i))/256;
-  return make_pixel(target, target, target, get_a(input_img, i));
+  uint32_t target = (79 * get_r(input_img->data[i]) + 128 * get_g(input_img->data[i]) + 49 * get_b(input_img->data[i]))/256;
+  return make_pixel(target, target, target, get_a(input_img->data[i]));
 }
 
 // Take a pixel in a foreground and background image, and combine them using the given overlay formula, return the encoded pixel value
 uint32_t to_composite(struct Image *fg, struct Image *bg, int i) {
-    uint32_t foreground_a = get_a(fg, i);
-    uint32_t target_r = (foreground_a * get_r(fg, i) + (255-foreground_a)*get_r(bg,i))/255;
-    uint32_t target_g = (foreground_a * get_g(fg, i) + (255-foreground_a)*get_g(bg,i))/255;
-    uint32_t target_b = (foreground_a * get_b(fg, i) + (255-foreground_a)*get_b(bg,i))/255;
+    uint32_t foreground_a = get_a(fg->data[i]);
+    uint32_t target_r = (foreground_a * get_r(fg->data[i]) + (255-foreground_a)*get_r(bg->data[i]))/255;
+    uint32_t target_g = (foreground_a * get_g(fg->data[i]) + (255-foreground_a)*get_g(bg->data[i]))/255;
+    uint32_t target_b = (foreground_a * get_b(fg->data[i]) + (255-foreground_a)*get_b(bg->data[i]))/255;
     return make_pixel(target_r, target_g, target_b, 255);
 }
 
