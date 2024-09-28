@@ -295,7 +295,7 @@ imgproc_mirror_h:
 			add $4, %r12 // increment input address
 			sub $4, %r13 // decrement output address
 			
-			inc % // increment x iterator
+			inc %ebx // increment x iterator
 			cmp %r14d, %ebx // check if x iterator is out of bounds
 			jl .x_loop_mir_h // if not, continue looping
 			//if reached end of row:
