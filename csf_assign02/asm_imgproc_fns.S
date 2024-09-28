@@ -31,12 +31,17 @@ get_r:
  * Returns:
  * %rax
 */
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $8, %rsp
 	push %rdx
 	//get r by right shift 24
 	mov %edi, %edx // move pixel val into edx
 	shr $24, %edx // right shift 24 bits
 	mov %edx, %eax // move value into rax for output
 	pop %rdx
+	addq $8, %rsp
+	popq %rbp
 	ret
 	
 	
@@ -53,6 +58,9 @@ get_g:
  * Returns:
  * %rax
 */
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $8, %rsp
 	push %rdx
 	//get b by left shift 8, right shift 24
 	mov %edi, %edx // move pixel val into edx
@@ -60,6 +68,8 @@ get_g:
 	shr $24, %edx // right shift 24 bits
 	mov %edx, %eax // move value into rax for output
 	pop %rdx
+	addq $8, %rsp
+	popq %rbp
 	ret
 
 
@@ -76,6 +86,9 @@ get_b:
  * Returns:
  * %rax
 */
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $8, %rsp
 	push %rdx
 	//get b by left shift 16, right shift 24
 	mov %edi, %edx // move pixel val into edx
@@ -83,6 +96,8 @@ get_b:
 	shr $24, %edx // right shift 24 bits
 	mov %edx, %eax // move value into rax for output
 	pop %rdx
+	addq $8, %rsp
+	popq %rbp
 	ret
 
 
@@ -99,6 +114,9 @@ get_a:
  * Returns:
  * %rax
 */
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $8, %rsp
 	push %rdx
 	//get b by left shift 24, right shift 24
 	mov %edi, %edx // move pixel val into edx
@@ -106,6 +124,8 @@ get_a:
 	shr $24, %edx // right shift 24 bits
 	mov %edx, %eax // move value into rax for output
 	pop %rdx
+	addq $8, %rsp
+	popq %rbp
 	ret
 
 .global make_pixel
@@ -123,16 +143,20 @@ make_pixel:
  * Returns:
  * %rax
 */
-mov $0, %eax
-shl $24, %rdi
-shl $16, %rsi
-shl $8, %rdx
-add %edi, %eax
-add %esi, %eax
-add %edx, %eax
-add %ecx, %eax
-
-ret
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $8, %rsp
+	mov $0, %eax
+	shl $24, %rdi
+	shl $16, %rsi
+	shl $8, %rdx
+	add %edi, %eax
+	add %esi, %eax
+	add %edx, %eax
+	add %ecx, %eax
+	addq $8, %rsp
+	popq %rbp
+	ret
 
 
 .global grayscale
@@ -147,29 +171,34 @@ grayscale:
  * Returns:
  * %rax
 */
-call get_g
-mov %eax, %esi
-call get_b
-mov %eax, %edx
-call get_a
-mov %eax, %ecx
-call get_r
-mov %eax, %edi
-// y=(79*r+128*g+49*b)/256
-imul $79, %edi
-imul $128, %esi
-imul $49, %edx
-mov $0, %ebx
-add %edi, %ebx
-add %esi, %ebx
-add %edx, %ebx
-shr $8, %ebx // math done
-mov %ebx, %eax 
-mov %eax, %edi
-mov %eax, %esi
-mov %eax, %edx
-call make_pixel // encode into pixel
-ret
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $8, %rsp
+	call get_g
+	mov %eax, %esi
+	call get_b
+	mov %eax, %edx
+	call get_a
+	mov %eax, %ecx
+	call get_r
+	mov %eax, %edi
+	// y=(79*r+128*g+49*b)/256
+	imul $79, %edi
+	imul $128, %esi
+	imul $49, %edx
+	mov $0, %ebx
+	add %edi, %ebx
+	add %esi, %ebx
+	add %edx, %ebx
+	shr $8, %ebx // math done
+	mov %ebx, %eax 
+	mov %eax, %edi
+	mov %eax, %esi
+	mov %eax, %edx
+	call make_pixel // encode into pixel
+	addq $8, %rsp
+	popq %rbp
+	ret
 
 /*
  * Implementations of API functions
@@ -213,6 +242,9 @@ imgproc_mirror_h:
  	*   -24(%rbp) - first element in column
  	*   -32(%rbp) - column
  	*/
+	pushq %rbp
+	//movq %rsp, %rbp
+	//subq $8, %rsp
 
 	pushq %r14
 	pushq %r15
@@ -220,20 +252,26 @@ imgproc_mirror_h:
 	pushq %r13
 	//pushq %r8
 	//movq %rsp, %rbp
-	subq $8, %rsp // allocate stack memory
+	//subq $32, %rsp // allocate stack memory
 	mov 0(%rdi), %r14d // assign width to %r14
 	mov 4(%rdi), %r15d // assign height %r15
+	mov $0, %rdx
+	add %r14d, %edx
+	mov %rdx, %r14
+	mov $0, %rdx
+	add %r15d, %edx
+	mov %rdx, %r15
 	//sub $1, %r14 // subtract 1 to prevent overflow
 	//sub $1, %r15 // subtract 1 to prevent overflow
 	mov 8(%rdi), %r12 // move address of input image pixel into r12
 	mov 8(%rsi), %r13 // move address of output image pixel into r13
 
 	// move output pointer to the end of the width
-
-	mov %r14d, %edx // getting 4 * width
-	sub $1, %edx
-	shl $2, %edx
-	add %edx, %r13d
+	mov $0, %rdx
+	add %r14, %rdx // getting 4 * width
+	sub $1, %rdx
+	shl $2, %rdx
+	add %rdx, %r13
 	//add $1, %edx
 	mov $0, %ecx // y iterator to 0
 
@@ -254,12 +292,12 @@ imgproc_mirror_h:
 			//if reached end of row:
 			//add 4 to r12 to get first element of next row
 			//add $4, %r12
-			mov $0, %edx
+			mov $0, %rdx
 			// add 2 * 4 * width to move the output to the end of the next row
-			mov %r14d, %edx // edx = width
-			shl $3, %edx // edx * 2^3
-			//sub $4, %edx // edx -= 4
-			add %edx, %r13d
+			mov %r14, %rdx // edx = width
+			shl $3, %rdx // edx * 2^3
+			//sub $4, %rdx // edx -= 4
+			add %rdx, %r13
 
 	.y_loop_end_mir_h:
 		inc %ecx // increment y iterator
@@ -272,8 +310,11 @@ imgproc_mirror_h:
 	popq %r15
 	popq %r14
 	mov $0, %ecx
-	addq $8, %rsp
+	//addq $8, %rsp
 	//popq %rbp
+
+	//addq $8, %rsp
+	popq %rbp
 	ret
 
 
@@ -308,62 +349,70 @@ imgproc_mirror_v:
  	*   -32(%rbp) - column
  	*/
 
+	//pushq %rbp
+	//movq %rsp, %rbp
+	subq $8, %rsp
+
 	pushq %r14
 	pushq %r15
 	pushq %r12
 	pushq %r13
+	pushq %r11
 	//pushq %r8
 	//movq %rsp, %rbp
-	subq $8, %rsp // allocate stack memory
+	//subq $8, %rsp // allocate stack memory
 	mov 0(%rdi), %r14d // assign width to %r14
 	mov 4(%rdi), %r15d // assign height %r15
+	mov $0, %rdx
+	add %r14d, %edx
+	mov %rdx, %r14
+	mov $0, %rdx
+	add %r15d, %edx
+	mov %rdx, %r15
 	//sub $1, %r14 // subtract 1 to prevent overflow
 	//sub $1, %r15 // subtract 1 to prevent overflow
 	mov 8(%rdi), %r12 // move address of input image pixel into r12
 	mov 8(%rsi), %r13 // move address of output image pixel into r13
 
-	// move output pointer to the end of the width
+	// move output offset to the end of the width
+	mov %r14, %rdx
+	imul %r15, %rdx
+	sub %r14, %rdx
+	shl $2, %rdx
+	add %rdx, %r13
 
-
-	mov %r14d, %edx
-	imul %r15d, %edx
-	sub %r15d, %edx
-	shl $2, %edx
-	add %edx, %r13d
-
-	mov $0, %ecx // y iterator to 0
+	mov $0, %rcx // y iterator to 0
 
 	.y_loop_mir_v:
-		mov $0, %ebx // x iterator to 0
+		mov $0, %rbx // x iterator to 0
 
 		.x_loop_mir_v:
 			
-			mov (%r12), %r8d
-			mov %r8d, (%r13)
+			movl (%r12), %r8d
+			movl %r8d, (%r13)
 			
 			add $4, %r12 // increment input address
-			add $4, %r13 // increment output address
+			add $4, %r13 // increment output offset
 			
 			inc %ebx
 			cmp %r14d, %ebx // check if x iterator is out of bounds
 			jl .x_loop_mir_v // if not, continue looping
-			//sub $4, %r12
-			sub $4, %r13
 			//if reached end of row:
-			mov $0, %edx
+			sub $4, %r13
+			mov $0, %rdx
 			// subtact 2 * 4 * width + 4to go up a row for the output
-			mov %r14d, %edx // edx = width
-			shl $3, %edx // edx * 2^2
-			sub $4, %edx
-			//sub $4, %edx // edx -= 4
-			sub %edx, %r13d
+			mov %r14, %rdx // edx = width
+			shl $3, %rdx // edx *= 2
+			sub $4, %rdx // edx = (2 * width) - 1
+			//sub $4, %rdx // edx -= 4
+			sub %rdx, %r13
 
 	.y_loop_end_mir_v:
 		inc %ecx // increment y iterator
 		cmp %r15d, %ecx // check if y iterator is out of bounds
 		jl .y_loop_mir_v // if not, continue looping
 
-	//popq %r8
+	popq %r11
 	popq %r13
 	popq %r12
 	popq %r15
@@ -371,6 +420,8 @@ imgproc_mirror_v:
 	mov $0, %ecx
 	addq $8, %rsp
 	//popq %rbp
+
+	
 	ret
 
 
@@ -411,6 +462,9 @@ imgproc_tile:
 	.globl imgproc_grayscale
 imgproc_grayscale:
 	/* TODO: implement */
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $8, %rsp
 	pushq %r14
 	pushq %r15
 	pushq %r12
@@ -447,6 +501,9 @@ imgproc_grayscale:
 	popq %r15
 	popq %r14
 	mov $0, %eax
+
+	addq $8, %rsp
+	popq %rbp
 	
 	ret
 
