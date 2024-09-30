@@ -106,6 +106,34 @@ get_b:
 	popq %rbp
 	ret
 
+/*
+.global blend_components
+blend_components:
+	//%rdi pixel value of foreground, %rsi pixel value of background
+	pushq %r13d
+	pushq %r14d
+	movl %edi, %r13d
+	movl %esi, %r14d
+*/
+
+.global blend_rgb
+blend_rgb:
+	//%rdi is (r, g, or b) value of foreground, %rsi is (r, g, or b) value of background, %rdx is alpha value of foreground
+	pushq %r12
+	pushq %r13
+	imull %edx, %edi
+	movl $255, %r12d
+	subl %edx, %r12d
+	imul %r12d, %esi
+	addl %esi, %edi
+	movslq %edi, %rdx
+	//movq $255, %rdx
+	movq $255, %rax
+	//%cdq
+	divq %rdx, %rax
+	popq %r13
+	popq %r12
+	ret
 
 .global get_a
 get_a:

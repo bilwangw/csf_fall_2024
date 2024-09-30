@@ -70,5 +70,6 @@ uint32_t get_a(uint32_t pixel);
 uint32_t to_grayscale(struct Image *input_img, int i);
 uint32_t make_pixel(uint32_t r,uint32_t g,uint32_t b,uint32_t a);
 uint32_t to_composite(struct Image *fg, struct Image *bg, int i);
+uint32_t blend_rgb (uint32_t foreground, uint32_t background, uint32_t alpha);
 
 #endif // IMGPROC_H

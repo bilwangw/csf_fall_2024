@@ -42,6 +42,9 @@ uint32_t to_composite(struct Image *fg, struct Image *bg, int i) {
     return make_pixel(target_r, target_g, target_b, 255);
 }
 
+uint32_t blend_rgb (uint32_t foreground, uint32_t background, uint32_t alpha) {
+  return (alpha*foreground + (255-alpha)*background)/255;
+}
 // Mirror input image horizontally.
 // This transformation always succeeds.
 //

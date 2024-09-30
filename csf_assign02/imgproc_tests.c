@@ -107,6 +107,7 @@ void test_get_a();
 void test_composite();
 void test_grayscale();
 void test_make_pixel();
+void test_blend_rgb();
 
 int main( int argc, char **argv ) {
   // allow the specific test to execute to be specified as the
@@ -131,6 +132,7 @@ int main( int argc, char **argv ) {
   //TEST( test_grayscale );
   //TEST( test_make_pixel );
   // TEST( test_composite );
+  TEST( test_blend_rgb );
 
   TEST_FINI();
 }
@@ -393,6 +395,12 @@ void test_get_red() {
   ASSERT(0x0 == get_r(test_img->data[3]));
 }
 
+void test_blend_rgb() {
+  //assign rgb values to pixels and check if get_r works
+  printf("%u\n", make_pixel(blend_rgb(0x21, 0x5A, 0x23), blend_rgb(0xBC, 0x87, 0x23), blend_rgb(0xFF, 0x1F, 0x23), 0x23));
+  ASSERT(0x528E3D23 == make_pixel(blend_rgb(0x21, 0x5A, 0x23), blend_rgb(0xBC, 0x87, 0x23), blend_rgb(0xFF, 0x1F, 0x23), 0x23));
+  ASSERT(0xFF2110FF == make_pixel(blend_rgb(0xFF, 0x15, 0xFF), blend_rgb(0x21, 0xCD, 0xFF), blend_rgb(0x10, 0x10, 0xFF), 0xFF));
+}
 void test_get_green() {
   Picture test_pic = {
     TEST_COLORS,
