@@ -106,36 +106,6 @@ get_b:
 	popq %rbp
 	ret
 
-/*
-.global blend_components
-blend_components:
-	//%rdi pixel value of foreground, %rsi pixel value of background
-	pushq %r13d
-	pushq %r14d
-	movl %edi, %r13d
-	movl %esi, %r14d
-*/
-
-.global blend_rgb
-blend_rgb:
-	//%rdi is (r, g, or b) value of foreground, %rsi is (r, g, or b) value of background, %rdx is alpha value of foreground
-	pushq %r12
-	pushq %r13
-	imulq %rdx, %rdi
-	movq $255, %r12
-	subq %rdx, %r12
-	imulq %r12, %rsi
-	addq %rsi, %rdi
-	movq %rdi, %rax
-	movq $255, %rbx
-	//movq $255, %rax
-	//%cdq
-	cqo
-	idivq %rbx
-	popq %r13
-	popq %r12
-	ret
-
 .global get_a
 get_a:
 /* this gets the a value out of the pixel
@@ -164,6 +134,98 @@ get_a:
 	addq $8, %rsp
 	popq %rbp
 	ret
+
+.global blend_components
+blend_components:
+	// %rdi pixel value of foreground, %rsi pixel value of background, %rax will be the blended pixel value output
+	// allocate registers to store pixel values
+	pushq %r13 // store r
+	pushq %r14 // store g
+	pushq %r15 // store b
+	pushq %r12 // store a
+	push %r10
+
+	xor %rax, %rax
+	xor %rdx, %rdx
+	movl %edi, %r8d // store pixel foreground pixel in r8
+	movl %esi, %r9d // store background pixel in r9
+
+	mov %r8d, %edi
+	call get_a
+	mov %eax, %edx // store foreground value of a in %rdx argument
+
+	mov %r8d, %edi // get r value of foreground, store in r10
+	call get_r
+	mov %eax, %r10d
+	
+	mov %r9d, %edi // get r value of background, store in esi arg for blend rgb
+	call get_r
+	mov %eax, %esi
+	mov %r10d, %edi
+
+	call blend_rgb // blend rgb for r values
+	mov %eax, %r13d // store blended r value in r13
+
+	mov %r8d, %edi // get g value of foreground, store in r10
+	call get_g
+	mov %eax, %r10d
+	
+	mov %r9d, %edi // get g value of background, store in esi arg for blend rgb
+	call get_g
+	mov %eax, %esi
+	mov %r10d, %edi
+
+	call blend_rgb // blend rgb for g values
+	mov %eax, %r14d // store blended g value in r14
+
+	mov %r8d, %edi // get b value of foreground, store in r10
+	call get_b
+	mov %eax, %r10d
+	
+	mov %r9d, %edi // get b value of background, store in esi arg for blend rgb
+	call get_g
+	mov %eax, %esi
+	mov %r10d, %edi
+
+	call blend_rgb // blend rgb for b values
+	mov %eax, %r15d // store blended b value in r15
+
+	mov %r13d, %edi // r
+	mov %r14d, %esi // g
+	mov %r15d, %edx // b
+	mov $255, %ecx // a
+	
+	call make_pixel
+
+
+	pop %r10
+	popq %r12
+	popq %r15
+	popq %r14
+	popq %r13
+	ret
+
+
+.global blend_rgb
+blend_rgb:
+	//%rdi is (r, g, or b) value of foreground, %rsi is (r, g, or b) value of background, %rdx is alpha value of foreground
+	pushq %r12
+	pushq %r13
+	imulq %rdx, %rdi
+	movq $255, %r12
+	subq %rdx, %r12
+	imulq %r12, %rsi
+	addq %rsi, %rdi
+	movq %rdi, %rax
+	movq $255, %rbx
+	//movq $255, %rax
+	//%cdq
+	cqo
+	idivq %rbx
+	popq %r13
+	popq %r12
+	ret
+
 
 .global make_pixel
 make_pixel:
@@ -568,7 +630,61 @@ imgproc_grayscale:
 	.globl imgproc_composite
 imgproc_composite:
 	/* TODO: implement (this stub implementation just returns 0) */
+		// prologue
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $8, %rsp
+	// push callee registers
+	pushq %r14
+	pushq %r15
+	pushq %r12
+	pushq %r13
+	pushq %r11
+	pushq %r10
+	
+	xor %r14, %r14
+	xor %r15, %r15
+	mov 0(%rdi), %r14d // assign width to %r14
+	mov 4(%rdi), %r15d // assign height %r15
+	mov 8(%rdi), %r12 // move address of base image pixel into r12
+	mov 8(%rsi), %r13 // move address of foreground image pixel into r13
+	mov 8(%rdx), %r11 // move address of output image pixel into r11
+
+	mov $0, %r10d
+	.composite:
+		mov (%r12), %r8d // store value of base image pixel into %r8
+		mov (%r12), %r9d // store value of foreground image pixel into %r9
+		// compute the composite transformation using composite function
+		mov %r8d, %edi // move foreground pixel val into function input arg
+		mov %r9d, %esi // move background pixel val into function input arg
+		call blend_components
+		mov %eax, (%r11) // move composite output to value of output pixel
+		add $4, %r12 // increment foreground pixel
+		add $4, %r13 // increment background pixel
+		add $4, %r11 // increment output image
+
+		inc %r10d // increment loop counter
+		// check if loop within bounds
+		mov %r15d, %edx // set edx to width
+		imul %r14d, %edx // multiply width * height
+		cmp %edx, %r10d // check if loop counter is less than the amount of pixels in the image (width * height)
+		jl .composite // continue looping if so
+	
+	popq %r10
+	popq %r11
+	// pop callee registers
+	popq %r13
+	popq %r12
+	popq %r15
+	popq %r14
+	mov $0, %eax
+	// epilogue
+	addq $8, %rsp
+	popq %rbp
+	
+
 	xorl %eax, %eax
+	mov $1, %rax
 	ret
 
 /*
