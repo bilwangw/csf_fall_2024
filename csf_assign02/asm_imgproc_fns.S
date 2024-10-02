@@ -121,16 +121,17 @@ blend_rgb:
 	//%rdi is (r, g, or b) value of foreground, %rsi is (r, g, or b) value of background, %rdx is alpha value of foreground
 	pushq %r12
 	pushq %r13
-	imull %edx, %edi
-	movl $255, %r12d
-	subl %edx, %r12d
-	imul %r12d, %esi
-	addl %esi, %edi
-	movslq %edi, %rdx
-	//movq $255, %rdx
-	movq $255, %rax
+	imulq %rdx, %rdi
+	movq $255, %r12
+	subq %rdx, %r12
+	imulq %r12, %rsi
+	addq %rsi, %rdi
+	movq %rdi, %rax
+	movq $255, %rbx
+	//movq $255, %rax
 	//%cdq
-	divq %rdx, %rax
+	cqo
+	idivq %rbx
 	popq %r13
 	popq %r12
 	ret
