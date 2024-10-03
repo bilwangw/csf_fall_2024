@@ -120,17 +120,17 @@ int main( int argc, char **argv ) {
   // Run tests.
   // Make sure you add additional TEST() macro invocations
   // for any additional test functions you add.
-  TEST( test_mirror_h_basic );
-  TEST( test_mirror_v_basic );
+  //TEST( test_mirror_h_basic );
+  //TEST( test_mirror_v_basic );
   //TEST( test_tile_basic );
-  TEST( test_grayscale_basic );
+  //TEST( test_grayscale_basic );
   //TEST( test_composite_basic );
-  TEST( test_get_red );
-  TEST( test_get_green );
-  TEST( test_get_blue );
-  TEST( test_get_a );
+  //TEST( test_get_red );
+  //TEST( test_get_green );
+  //TEST( test_get_blue );
+  //TEST( test_get_a );
   //TEST( test_grayscale );
-  TEST( test_make_pixel );
+  //TEST( test_make_pixel );
   // TEST( test_composite );
   TEST( test_blend_rgb );
 

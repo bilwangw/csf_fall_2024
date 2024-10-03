@@ -243,8 +243,7 @@ make_pixel:
  * %rax
 */
 	// prologue
-	pushq %rbp
-	movq %rsp, %rbp
+	
 	subq $8, %rsp
 	mov $0, %eax // initialize output to 0
 	shl $24, %rdi // left shift r to be in the 8 most significant bits
@@ -256,7 +255,6 @@ make_pixel:
 	add %ecx, %eax // add a to output
 	// epilogue
 	addq $8, %rsp
-	popq %rbp
 	ret
 
 
