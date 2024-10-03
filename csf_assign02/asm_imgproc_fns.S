@@ -134,6 +134,78 @@ get_a:
 	addq $8, %rsp
 	popq %rbp
 	ret
+.global blend_components_alt
+blend_components_alt:
+	// %rdi pixel value of foreground, %rsi pixel value of background, %rax will be the blended pixel value output
+	// allocate registers to store pixel values
+	pushq %r13 // store r
+	pushq %r14 // store g
+	pushq %r15 // other use 
+	pushq %r12 // store background 
+	push %r10
+
+	xor %rax, %rax
+	xor %rdx, %rdx
+	movl %edi, %ebx // store pixel foreground pixel in ebx
+	movl %esi, %r12d // store background pixel in r12d
+
+	mov %ebx, %edi
+	call get_a
+	mov %eax, %r15d // store foreground value of a in %rdx argument
+
+	mov %ebx, %edi // get r value of foreground, store in r14
+	call get_r
+	mov %eax, %r13d
+	
+	mov %r12d, %edi // get r value of background, store in esi arg for blend rgb
+	call get_r
+	mov %eax, %esi
+	mov %r13d, %edi
+
+	mov %r15d, %edx
+	call blend_rgb // blend rgb for r values
+	mov %eax, %r13d // store blended r value in r13
+
+	mov %ebx, %edi // get g value of foreground, store in r10
+	call get_g
+	mov %eax, %r14d
+	
+	mov %r12d, %edi // get g value of background, store in esi arg for blend rgb
+	call get_g
+	mov %eax, %esi
+	mov %r14d, %edi
+
+	mov %r15d, %edx
+	call blend_rgb // blend rgb for g values
+	mov %eax, %r14d // store blended g value in r14
+
+	mov %ebx, %edi // get b value of foreground, store in r10
+	call get_b
+	mov %eax, %ebx
+	
+	mov %r12d, %edi // get b value of background, store in esi arg for blend rgb
+	call get_b
+	mov %eax, %esi
+	mov %ebx, %edi
+
+	mov %r15d, %edx
+	call blend_rgb // blend rgb for b values
+	mov %eax, %r9d // store blended b value in r9d
+
+	mov %r13d, %edi // r
+	mov %r14d, %esi // g
+	mov %r9d, %edx // b
+	mov $255, %ecx // a
+	
+	call make_pixel
+
+	pop %r10
+	popq %r12
+	popq %r15
+	popq %r14
+	popq %r13
+	ret
+
 
 .global blend_components
 blend_components:
@@ -152,7 +224,7 @@ blend_components:
 
 	mov %r8d, %edi
 	call get_a
-	mov %eax, %edx // store foreground value of a in %rdx argument
+	mov %eax, %r12d // store foreground value of a in %rdx argument
 
 	mov %r8d, %edi // get r value of foreground, store in r10
 	call get_r
@@ -163,6 +235,7 @@ blend_components:
 	mov %eax, %esi
 	mov %r10d, %edi
 
+	movl %r12d, %edx
 	call blend_rgb // blend rgb for r values
 	mov %eax, %r13d // store blended r value in r13
 
@@ -175,6 +248,7 @@ blend_components:
 	mov %eax, %esi
 	mov %r10d, %edi
 
+	movl %r12d, %edx
 	call blend_rgb // blend rgb for g values
 	mov %eax, %r14d // store blended g value in r14
 
@@ -183,10 +257,11 @@ blend_components:
 	mov %eax, %r10d
 	
 	mov %r9d, %edi // get b value of background, store in esi arg for blend rgb
-	call get_g
+	call get_b
 	mov %eax, %esi
 	mov %r10d, %edi
 
+	movl %r12d, %edx
 	call blend_rgb // blend rgb for b values
 	mov %eax, %r15d // store blended b value in r15
 
