@@ -197,7 +197,6 @@ blend_components:
 	
 	call make_pixel
 
-
 	pop %r10
 	popq %r12
 	popq %r15
@@ -628,7 +627,7 @@ imgproc_grayscale:
 	.globl imgproc_composite
 imgproc_composite:
 	/* TODO: implement (this stub implementation just returns 0) */
-		// prologue
+	// prologue
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $8, %rsp
@@ -639,19 +638,20 @@ imgproc_composite:
 	pushq %r13
 	pushq %r11
 	pushq %r10
+	//DONT FORGET TO TEST UNEQUAL WIDTH AND HEIGHT
 	
 	xor %r14, %r14
 	xor %r15, %r15
 	mov 0(%rdi), %r14d // assign width to %r14
 	mov 4(%rdi), %r15d // assign height %r15
-	mov 8(%rdi), %r12 // move address of base image pixel into r12
-	mov 8(%rsi), %r13 // move address of foreground image pixel into r13
+	mov 8(%rsi), %r12 // move address of foreground image pixel into r12
+	mov 8(%rdi), %r13 // move address of background image pixel into r13
 	mov 8(%rdx), %r11 // move address of output image pixel into r11
 
 	mov $0, %r10d
 	.composite:
-		mov (%r12), %r8d // store value of base image pixel into %r8
-		mov (%r12), %r9d // store value of foreground image pixel into %r9
+		mov (%r12), %r8d // store value of foreground image pixel into %r8
+		mov (%r13), %r9d // store value of background image pixel into %r9
 		// compute the composite transformation using composite function
 		mov %r8d, %edi // move foreground pixel val into function input arg
 		mov %r9d, %esi // move background pixel val into function input arg
