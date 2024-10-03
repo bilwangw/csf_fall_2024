@@ -420,7 +420,11 @@ void test_blend_rgb() {
   printf("%x\n", g);
   printf("%x\n", b);
   ASSERT(0x529364FF == make_pixel(r,g,b,0xFF));
-  // pixels to blend: 0xf3f9f2ff, 0x15CD92FF
+  // pixels to blend: 0x0,0xf3f9f2ff
+  r = blend_rgb(0x00, 0xf3, 0x00);
+  g = blend_rgb(0x00, 0xf9, 0x00);
+  b = blend_rgb(0x00, 0xf2, 0x00);
+  ASSERT(0xf3f9f2ff == make_pixel(r,g,b,0xFF));
 }
 void test_get_green() {
   Picture test_pic = {
