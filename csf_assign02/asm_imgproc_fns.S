@@ -111,7 +111,6 @@ get_a:
 /* this gets the a value out of the pixel
  * input is just the 32 bit encoded pixel value
  *
- *
  * Parameters:
  *
  * %rdi - input
@@ -134,6 +133,7 @@ get_a:
 	addq $8, %rsp
 	popq %rbp
 	ret
+/*
 .global blend_components_alt
 blend_components_alt:
 	// %rdi pixel value of foreground, %rsi pixel value of background, %rax will be the blended pixel value output
@@ -205,11 +205,18 @@ blend_components_alt:
 	popq %r14
 	popq %r13
 	ret
-
+*/
 
 .global blend_components
 blend_components:
-	// %rdi pixel value of foreground, %rsi pixel value of background, %rax will be the blended pixel value output
+/*
+ * Parameters:
+ * %rdi - pixel value of foreground 
+ * %rsi - pixel value of background
+ *
+ * Returns:
+ * %rax - blended pixel value output
+*/
 	// allocate registers to store pixel values
 	pushq %r13 // store r
 	pushq %r14 // store g
@@ -282,20 +289,32 @@ blend_components:
 
 .global blend_rgb
 blend_rgb:
-	//%rdi is (r, g, or b) value of foreground, %rsi is (r, g, or b) value of background, %rdx is alpha value of foreground
+/*
+ * Parameters:
+ * %rdi - (r, g, or b) value of foreground, 
+ * %rsi - (r, g, or b) value of background, 
+ * %rdx - alpha value of foreground
+ * 
+ * Returns:
+ * %rax - blended pixel value
+ * 
+ * 
+*/
+	// push callee-saved
 	pushq %r12
 	pushq %r13
-	imulq %rdx, %rdi
-	movq $255, %r12
-	subq %rdx, %r12
-	imulq %r12, %rsi
-	addq %rsi, %rdi
-	movq %rdi, %rax
-	movq $255, %rbx
-	//movq $255, %rax
-	//%cdq
+	// apply the formula (af+(255−a)b)/255
+	imulq %rdx, %rdi // multiply a * f
+	movq $255, %r12 // allocate 255 to r12
+	subq %rdx, %r12 // 255 - a
+	imulq %r12, %rsi // (255 - a) * b
+	addq %rsi, %rdi // af + (255 - a)b
+	movq %rdi, %rax // move value to dividend
+	movq $255, %rbx // move 255 into divisor
 	cqo
-	idivq %rbx
+	idivq %rbx // (af + (255 - a)b)/255
+
+	// pop callee-saved
 	popq %r13
 	popq %r12
 	ret
@@ -411,13 +430,6 @@ imgproc_mirror_h:
 	*	%rbx - x iterator
 	*	%rcx - y iterator
  	*
-	* Memory use:
- 	*   -8(%rbp) - pixel value of input
- 	*   -16(%rbp) - address output pixel location
- 	*   -12(%rbp) - 
- 	*   -16(%rbp) - 
- 	*   -24(%rbp) - first element in column
- 	*   -32(%rbp) - column
  	*/
 	// push used callee registers
 	pushq %rbp
@@ -508,13 +520,6 @@ imgproc_mirror_v:
 	*	%rcx - y iterator
 	*	%rbx - x iterator
  	*
-	* Memory use:
- 	*   -8(%rbp) - pixel value of input
- 	*   -16(%rbp) - address output pixel location
- 	*   -12(%rbp) - 
- 	*   -16(%rbp) - 
- 	*   -24(%rbp) - first element in column
- 	*   -32(%rbp) - column
  	*/
 
 	subq $8, %rsp
@@ -625,14 +630,6 @@ imgproc_tile:
  *  %rdx - calculations
  *	%r11 - loop iterator
  *
- * Memory use:
- *   -8(%rbp) - pixel value of input
- *   -16(%rbp) - address output pixel location
- *   -12(%rbp) - 
- *   -16(%rbp) - 
- *   -24(%rbp) - first element in column
- *   -32(%rbp) - column
- *
  * Parameters:
  *   %rdi - pointer to original struct Image
  *   %rsi - pointer to output struct Image
@@ -701,7 +698,6 @@ imgproc_grayscale:
  */
 	.globl imgproc_composite
 imgproc_composite:
-	/* TODO: implement (this stub implementation just returns 0) */
 	// prologue
 	pushq %rbp
 	movq %rsp, %rbp
@@ -713,12 +709,21 @@ imgproc_composite:
 	pushq %r13
 	pushq %r11
 	pushq %r10
-	//DONT FORGET TO TEST UNEQUAL WIDTH AND HEIGHT
 	
 	xor %r14, %r14
 	xor %r15, %r15
-	mov 0(%rdi), %r14d // assign width to %r14
-	mov 4(%rdi), %r15d // assign height %r15
+	mov 0(%rdi), %r14d // assign foreground width to %r14
+	mov 4(%rdi), %r15d // assign foreground height %r15
+	mov 0(%rsi), %r12d // temporarily assign background width to test
+	mov 4(%rsi), %r13d // temporarily assign background height to test
+
+	cmp %r14d, %r12d // check if widths are equal for both images
+	jne .composite_fail
+	cmp %r15d, %r13d // check if heights are equal for both images
+	jne .composite_fail
+
+	xor %r13, %r13 // clear r13
+	xor %r12, %r12 // clear r12
 	mov 8(%rsi), %r12 // move address of foreground image pixel into r12
 	mov 8(%rdi), %r13 // move address of background image pixel into r13
 	mov 8(%rdx), %r11 // move address of output image pixel into r11
@@ -730,7 +735,7 @@ imgproc_composite:
 		// compute the composite transformation using composite function
 		mov %r8d, %edi // move foreground pixel val into function input arg
 		mov %r9d, %esi // move background pixel val into function input arg
-		call blend_components
+		call blend_components // run blend components
 		mov %eax, (%r11) // move composite output to value of output pixel
 		add $4, %r12 // increment foreground pixel
 		add $4, %r13 // increment background pixel
@@ -743,6 +748,14 @@ imgproc_composite:
 		cmp %edx, %r10d // check if loop counter is less than the amount of pixels in the image (width * height)
 		jl .composite // continue looping if so
 	
+	mov $1, %rax // return 1 if successful (this should run when loop exits normally)
+
+	jmp .composite_end // jump over fail state if running normally
+
+	.composite_fail: // this should only run if dimensions are unequal
+	mov $0, %rax // return 0 if unsuccessful
+
+	.composite_end:
 	popq %r10
 	popq %r11
 	// pop callee registers
@@ -750,14 +763,9 @@ imgproc_composite:
 	popq %r12
 	popq %r15
 	popq %r14
-	mov $0, %eax
 	// epilogue
 	addq $8, %rsp
 	popq %rbp
-	
-
-	xorl %eax, %eax
-	mov $1, %rax
 	ret
 
 /*
