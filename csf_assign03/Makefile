@@ -1,7 +1,7 @@
 CC = g++
 FLAGS = -Wall -Wextra -pedantic
 
-MAIN = main.c
+MAIN = main.cpp
 
 csim : $(MAIN_OBJS)
 	$(CC) $(FLAGS) $(MAIN) -o $@ $+
