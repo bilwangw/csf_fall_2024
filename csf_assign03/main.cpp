@@ -82,9 +82,9 @@ int main (int argc, char *argv[])  {
         std::cout << argv[6] << "\n";
         
     }
-    // uint32_t num_sets = int(*argv[1]);
-    // uint32_t num_blocks = int(*argv[2]);
-    // uint32_t block_size = int(*argv[3]);
+    uint32_t num_sets = std::atoi(argv[1]);
+    uint32_t num_blocks = std::atoi(argv[2]);
+    uint32_t block_size = std::atoi(argv[3]);
 
     return 0;
 }
