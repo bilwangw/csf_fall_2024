@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <map>
 // ./csim 256 4 16 write-allocate write-back fifo < gcc.trace
 
 /* inputs
@@ -30,11 +31,17 @@ struct Slot {
 
 struct Set {
     std::vector<Slot> slots;
+    std::map<uint32_t, Slot *> index;
 };
 
 struct Cache {
     std::vector<Set> sets;
 };
+
+//global variables
+uint32_t currentTime = 0;
+uint32_t cycles = 0;
+
 
 //block offset is memory address mod 2n (offset based on size of blocks in the memory (length of an element stored))
 int main (int argc, char *argv[])  {
