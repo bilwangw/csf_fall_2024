@@ -6,7 +6,9 @@
 #include <cstdlib>
 #include <string>
 #include <map>
-// ./csim 256 4 16 write-allocate write-back fifo < gcc.trace
+#include <tuple>
+// ./csim 256 4 16 write-allocate write-back fifo < traces/hits.trace
+//256 sets, 4 blocks, 16 bits in each block (offset size)
 
 /* inputs
 number of sets in the cache (a positive power-of-2)
@@ -40,16 +42,56 @@ struct Cache {
 
 //global variables
 uint32_t currentTime = 0;
+
+uint32_t loads = 0;
+uint32_t stores = 0;
+uint32_t load_hits = 0;
+uint32_t load_misses = 0;
+uint32_t store_hits = 0;
+uint32_t store_misses = 0;
 uint32_t cycles = 0;
+
+std::tuple<uint32_t, uint32_t> parseAddress(uint32_t address, Cache cache, uint index_len, uint offset_len) {
+    currentTime++; // increment time stamp
+    uint32_t index;
+    uint32_t tag;
+    index = (address%(2<<(offset_len + index_len))) >> offset_len;
+    tag = address >> (offset_len + index_len);
+    return std::make_tuple(tag, index);
+}
+
+void loadBlock(uint32_t address, Cache cache, uint index_len, uint offset_len, bool wAlloc, bool wBackThru, bool lru_fifo) {
+    uint32_t tag, index;
+    std::tuple<uint32_t, uint32_t> parsedAddress;
+    parsedAddress = parseAddress(address, cache, index_len, offset_len);
+    tag = std::get<0>(parsedAddress);
+    index = std::get<1>(parsedAddress);
+}
+
+void storeBlock(uint32_t address, Cache cache, uint index_len, uint offset_len, bool wAlloc, bool wBackThru, bool lru_fifo) {
+    uint32_t tag, index;
+    std::tuple<uint32_t, uint32_t> parsedAddress;
+    parsedAddress = parseAddress(address, cache, index_len, offset_len);
+    tag = std::get<0>(parsedAddress);
+    index = std::get<1>(parsedAddress);
+    if(cache.sets[index].slots.size() == 1) {
+        cache.sets[index].slots[0].valid = false;
+        cache.sets[index].slots[0].tag = tag;
+        cache.sets[index].slots[0].load_ts = currentTime;
+    }
+}
 
 
 //block offset is memory address mod 2n (offset based on size of blocks in the memory (length of an element stored))
 int main (int argc, char *argv[])  {
+    std::string arg4(argv[4]);
+    std::string arg5(argv[5]);
+    std::string arg6(argv[6]);
     if (
         ceil(log2(std::atoi(argv[1]))) != floor(log2(std::atoi(argv[1]))) // check if num sets is power of 2
     ) {
-        std::cout << argv[1] << "\n";
-        std::cout << std::atoi(argv[1]) << "\n";
+        // std::cout << argv[1] << "\n";
+        // std::cout << std::atoi(argv[1]) << "\n";
         std::cerr << "Number of sets is not a power of 2\n";
         return 1;
     }
@@ -65,9 +107,6 @@ int main (int argc, char *argv[])  {
         std::cerr << "Block size is not greater than or equal to 4\n";
     }
     else {
-        std::string arg4(argv[4]);
-        std::string arg5(argv[5]);
-        std::string arg6(argv[6]);
         if (arg4 != "write-allocate" && arg4 != "no-write-allocate") {
             std::cerr << "Invalid argument, must be write-allocate or no-write-allocate\n";
             return 1;
@@ -84,14 +123,77 @@ int main (int argc, char *argv[])  {
             std::cerr << "write-back and no-write-allocate cannot be used at the same time\n";
             return 1;
         }
-        std::cout << argv[4] << "\n";
-        std::cout << argv[5] << "\n";
-        std::cout << argv[6] << "\n";
         
     }
+    bool wAlloc; // false is no-write-allocate, true is write-allocate
+    bool wBackThru; // false is write-back, true is write-through
+    bool lru_fifo; // false is lru, true is fifo
+
+    if (arg4.compare("write-allocate")) {
+        wAlloc = 1;
+    }
+    else if (arg4.compare("no-write-allocate")) {
+        wAlloc = 0;
+    }
+    if (arg5.compare("write-through")) {
+        wBackThru = 1;
+    }
+    else if (arg5.compare("write-back")) {
+        wBackThru = 0;
+    }
+    if (arg6.compare("lru")) {
+        lru_fifo = 0;
+    }
+    else if (arg6.compare("fifo")) {
+        lru_fifo = 1;
+    }
+
     uint32_t num_sets = std::atoi(argv[1]);
+    uint index_len = log2(num_sets); // get the bit length of sets
     uint32_t num_blocks = std::atoi(argv[2]);
     uint32_t block_size = std::atoi(argv[3]);
+    uint offset_len = log2(block_size);
+    uint tag_len = 32 - offset_len - index_len; // compute tag length by subtracting offset and index length from the length of the memory address
+    std::vector<Set> sets(num_sets);
+
+
+    std::vector<Set>::iterator it;
+    int i;
+
+    Slot blank_slot;
+    blank_slot.valid = true;
+    blank_slot.dirty = false;
+    for(it = sets.begin(); it != sets.end(); it++,i++ )    {
+        std::vector<Slot> slots(num_blocks);
+        it->slots = slots;
+    }
+
+
+    Cache cache;
+    cache.sets = sets;
+
+    char op;
+    std::string address;
+    char dummy;
+
+
+    while(std::cin >> op) {
+        std::cin >> address;
+        //std::cout << address << "\n";
+        std::cin >> dummy;
+        if (op == 'l') {
+            //loadBlock(stoi(address), cache, index_len, offset_len, wAlloc, wBackThru, lru_fifo);
+            loads++;
+        }
+        else if (op == 's') {
+            //storeBlock(stoi(address), cache, index_len, offset_len, wAlloc, wBackThru, lru_fifo);
+            stores++;
+        }
+        
+    }
+
+    std::cout << "Total loads: " << loads << "\n";
+    std::cout << "Total stores: " << stores << "\n";
 
     return 0;
 }
