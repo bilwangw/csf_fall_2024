@@ -60,12 +60,40 @@ std::tuple<uint32_t, uint32_t> parseAddress(uint32_t address, Cache cache, uint 
     return std::make_tuple(tag, index);
 }
 
-void loadBlock(uint32_t address, Cache cache, uint index_len, uint offset_len, bool wAlloc, bool wBackThru, bool lru_fifo) {
+void writeToSlot(Cache cache, uint index, uint32_t tag, uint slot) {
+    cache.sets[index].slots[slot].valid = false;
+    cache.sets[index].slots[slot].dirty = true;
+    cache.sets[index].slots[slot].tag = tag;
+    cache.sets[index].slots[slot].load_ts = currentTime;
+    cache.sets[index].slots[slot].access_ts = currentTime;
+}
+
+void overwriteSlot(Cache cache, uint index, uint32_t tag, uint slot) {
+    cache.sets[index].slots[slot].valid = false;
+    cache.sets[index].slots[slot].dirty = true;
+    cache.sets[index].slots[slot].tag = tag;
+    cache.sets[index].slots[slot].access_ts = currentTime;
+}
+
+void loadBlock(uint32_t address, Cache cache, uint index_len, uint offset_len, bool lru_fifo) {
     uint32_t tag, index;
     std::tuple<uint32_t, uint32_t> parsedAddress;
     parsedAddress = parseAddress(address, cache, index_len, offset_len);
     tag = std::get<0>(parsedAddress);
     index = std::get<1>(parsedAddress);
+    if(cache.sets[index].slots.size() == 1) { // direct mapped case
+        if(cache.sets[index].slots[0].valid == true) { // if slot is valid, then it is empty
+            load_misses++;
+            cycles++;
+            writeToSlot(cache, index, tag, 0); // so block is empty, so load from mem
+            cycles+=2<<(offset_len-3)*25; // 100 cycles per 4 bytes being transferred, so 2^offset_len bits, divide by 8 (to get bytes), times 25 cycles/byte
+        }
+        else {
+            load_hits++;
+            cycles++;
+            overwriteSlot(cache, index, tag, 0); // successful hit, overwrite to update time stamp
+        }
+    }
 }
 
 void storeBlock(uint32_t address, Cache cache, uint index_len, uint offset_len, bool wAlloc, bool wBackThru, bool lru_fifo) {
@@ -74,10 +102,19 @@ void storeBlock(uint32_t address, Cache cache, uint index_len, uint offset_len, 
     parsedAddress = parseAddress(address, cache, index_len, offset_len);
     tag = std::get<0>(parsedAddress);
     index = std::get<1>(parsedAddress);
-    if(cache.sets[index].slots.size() == 1) {
-        cache.sets[index].slots[0].valid = false;
-        cache.sets[index].slots[0].tag = tag;
-        cache.sets[index].slots[0].load_ts = currentTime;
+    if(!wAlloc && wBackThru) {// no-write-allocate and write-through
+        if(cache.sets[index].slots.size() == 1) { // check direct mapped case
+            if(cache.sets[index].slots[0].valid == false) { // if slot is invalid, this is a miss (slot in use)
+                store_misses++;
+                cycles++;
+            }
+            else { // if slot empty, fill it
+                writeToSlot(cache, index, tag, 0);
+                store_hits++;
+                cycles++;
+            }
+
+        }
     }
 }
 
@@ -172,9 +209,9 @@ int main (int argc, char *argv[])  {
     Cache cache;
     cache.sets = sets;
 
-    char op;
-    std::string address;
-    char dummy;
+    char op; // operation (load or store)
+    std::string address; // memory address
+    char dummy; // dummy variable to store third argument, necessary for iterating through cin
 
 
     while(std::cin >> op) {
@@ -182,11 +219,11 @@ int main (int argc, char *argv[])  {
         //std::cout << address << "\n";
         std::cin >> dummy;
         if (op == 'l') {
-            //loadBlock(stoi(address), cache, index_len, offset_len, wAlloc, wBackThru, lru_fifo);
+            loadBlock(stoi(address), cache, index_len, offset_len, lru_fifo);
             loads++;
         }
         else if (op == 's') {
-            //storeBlock(stoi(address), cache, index_len, offset_len, wAlloc, wBackThru, lru_fifo);
+            storeBlock(stoi(address), cache, index_len, offset_len, wAlloc, wBackThru, lru_fifo);
             stores++;
         }
         
@@ -194,7 +231,11 @@ int main (int argc, char *argv[])  {
 
     std::cout << "Total loads: " << loads << "\n";
     std::cout << "Total stores: " << stores << "\n";
-
+    std::cout << "Load hits: " << load_hits << "\n";
+    std::cout << "Load misses: " << load_misses << "\n";
+    std::cout << "Store hits: " << store_hits << "\n";
+    std::cout << "Store misses: " << store_misses << "\n";
+    std::cout << "Total cycles: " << cycles << "\n";
     return 0;
 }
 
