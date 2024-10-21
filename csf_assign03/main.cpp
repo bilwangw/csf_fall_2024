@@ -29,6 +29,10 @@ struct Slot {
     uint32_t tag;
     bool valid, dirty;
     uint32_t load_ts, access_ts;
+
+    Slot() : tag(0), valid(false), dirty(false), load_ts(0), access_ts(0) {
+
+    }
 };
 
 struct Set {
@@ -51,71 +55,87 @@ uint32_t store_hits = 0;
 uint32_t store_misses = 0;
 uint32_t cycles = 0;
 
-std::tuple<uint32_t, uint32_t> parseAddress(uint32_t address, Cache cache, uint index_len, uint offset_len) {
+std::tuple<uint32_t, uint32_t> parseAddress(uint32_t address, Cache &cache, uint index_len, uint offset_len) {
     currentTime++; // increment time stamp
     uint32_t index;
     uint32_t tag;
-    index = (address%(2<<(offset_len + index_len))) >> offset_len;
+    //index = (address%(2<<(offset_len + index_len - 1))) >> offset_len;
+    index = (address<<(32 - offset_len - index_len)) >> (32 - index_len);
     tag = address >> (offset_len + index_len);
+
     return std::make_tuple(tag, index);
 }
 
-void writeToSlot(Cache cache, uint index, uint32_t tag, uint slot) {
-    cache.sets[index].slots[slot].valid = false;
+void writeToSlot(Cache &cache, uint index, uint32_t tag, uint slot) {
+    cache.sets[index].slots[slot].valid = true;
     cache.sets[index].slots[slot].dirty = true;
     cache.sets[index].slots[slot].tag = tag;
     cache.sets[index].slots[slot].load_ts = currentTime;
     cache.sets[index].slots[slot].access_ts = currentTime;
 }
 
-void overwriteSlot(Cache cache, uint index, uint32_t tag, uint slot) {
-    cache.sets[index].slots[slot].valid = false;
-    cache.sets[index].slots[slot].dirty = true;
-    cache.sets[index].slots[slot].tag = tag;
+void updateTimestamp(Cache &cache, uint index, uint slot) {
     cache.sets[index].slots[slot].access_ts = currentTime;
 }
 
-void loadBlock(uint32_t address, Cache cache, uint index_len, uint offset_len, bool lru_fifo) {
+void loadBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len, bool lru_fifo) {
     uint32_t tag, index;
     std::tuple<uint32_t, uint32_t> parsedAddress;
     parsedAddress = parseAddress(address, cache, index_len, offset_len);
     tag = std::get<0>(parsedAddress);
     index = std::get<1>(parsedAddress);
+    
     if(cache.sets[index].slots.size() == 1) { // direct mapped case
-        if(cache.sets[index].slots[0].valid == true) { // if slot is valid, then it is empty
+        if(cache.sets[index].slots[0].valid) { // if slot is valid, then it is filled
+            if(cache.sets[index].slots[0].tag == tag) {
+                load_hits++;
+                updateTimestamp(cache, index, 0);
+            }
+            else { // different tag, same slot
+                load_misses++;
+            }
+            writeToSlot(cache, index, tag, 0); // either way, update timestamp
+            cycles++;
+        }
+        else { // slot is invalid, so it is empty
             load_misses++;
             cycles++;
             writeToSlot(cache, index, tag, 0); // so block is empty, so load from mem
-            cycles+=2<<(offset_len-3)*25; // 100 cycles per 4 bytes being transferred, so 2^offset_len bits, divide by 8 (to get bytes), times 25 cycles/byte
-        }
-        else {
-            load_hits++;
-            cycles++;
-            overwriteSlot(cache, index, tag, 0); // successful hit, overwrite to update time stamp
+            cycles+=(2<<(offset_len-3))*25; // 100 cycles per 4 bytes being transferred, so 2^offset_len bits, divide by 8 (to get bytes), times 25 cycles/byte
         }
     }
 }
 
-void storeBlock(uint32_t address, Cache cache, uint index_len, uint offset_len, bool wAlloc, bool wBackThru, bool lru_fifo) {
+void storeBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len, bool wAlloc, bool wBackThru, bool lru_fifo) {
     uint32_t tag, index;
     std::tuple<uint32_t, uint32_t> parsedAddress;
     parsedAddress = parseAddress(address, cache, index_len, offset_len);
     tag = std::get<0>(parsedAddress);
     index = std::get<1>(parsedAddress);
-    if(!wAlloc && wBackThru) {// no-write-allocate and write-through
+    //if(!wAlloc && wBackThru) {// no-write-allocate and write-through
         if(cache.sets[index].slots.size() == 1) { // check direct mapped case
-            if(cache.sets[index].slots[0].valid == false) { // if slot is invalid, this is a miss (slot in use)
-                store_misses++;
-                cycles++;
+            if(cache.sets[index].slots[0].valid == true) { // if slot is valid, this is a hit
+                if(cache.sets[index].slots[0].tag == tag) { // if tags match, then successful store
+                    //std::cout << "storehit";
+                    updateTimestamp(cache, index, 0);
+                    store_hits++;
+                    cycles++;
+                }
+                else { // if tags do not match, need to update slot
+                    //std::cout << "storemiss tag false";
+                    writeToSlot(cache, index, tag, 0);
+                    store_misses++;
+                    cycles++;
+                }
             }
-            else { // if slot empty, fill it
+            else { // this is a miss
                 writeToSlot(cache, index, tag, 0);
-                store_hits++;
+                store_misses++;
                 cycles++;
             }
 
         }
-    }
+    //}
 }
 
 
@@ -198,7 +218,7 @@ int main (int argc, char *argv[])  {
     int i;
 
     Slot blank_slot;
-    blank_slot.valid = true;
+    blank_slot.valid = false;
     blank_slot.dirty = false;
     for(it = sets.begin(); it != sets.end(); it++,i++ )    {
         std::vector<Slot> slots(num_blocks);
@@ -211,22 +231,39 @@ int main (int argc, char *argv[])  {
 
     char op; // operation (load or store)
     std::string address; // memory address
-    char dummy; // dummy variable to store third argument, necessary for iterating through cin
+    std::string dummy; // dummy variable to store third argument, necessary for iterating through cin
 
+    // std::cin >> op;
+    // std::cin >> address;
+    // std::cout << address << "\n";
+    // std::cout << stoul(address.substr(2),nullptr, 16) << "\n";
+    // std::tuple<uint32_t, uint32_t> parsedAddress;
+    // parsedAddress = parseAddress(stoul(address.substr(2),nullptr, 16), cache, index_len, offset_len);
+    // uint32_t tag, index;
+    // tag = std::get<0>(parsedAddress);
+    // index = std::get<1>(parsedAddress);
+    // std::cout << tag <<"\n" << index << "\n";
 
     while(std::cin >> op) {
         std::cin >> address;
-        //std::cout << address << "\n";
         std::cin >> dummy;
         if (op == 'l') {
-            loadBlock(stoi(address), cache, index_len, offset_len, lru_fifo);
+            loadBlock(stoul(address.substr(2),nullptr, 16), cache, index_len, offset_len, lru_fifo);
             loads++;
         }
         else if (op == 's') {
-            storeBlock(stoi(address), cache, index_len, offset_len, wAlloc, wBackThru, lru_fifo);
+            storeBlock(stoul(address.substr(2), nullptr, 16), cache, index_len, offset_len, wAlloc, wBackThru, lru_fifo);
             stores++;
         }
-        
+    }
+
+    for (int i = 0; i < num_sets; i++) {
+        //std::cout << "tags: " << cache.sets[i].slots[0].tag << "\n";
+        std::cout << cache.sets[i].slots.size()<< "\n";
+        //std::cout << cache.sets[i].slots[0].load_ts << "\n";
+        for(uint32_t j = 0; j < cache.sets[i].slots.size(); j++) {
+            std::cout << cache.sets[i].slots[j].tag << "\n";
+        }
     }
 
     std::cout << "Total loads: " << loads << "\n";
@@ -236,6 +273,14 @@ int main (int argc, char *argv[])  {
     std::cout << "Store hits: " << store_hits << "\n";
     std::cout << "Store misses: " << store_misses << "\n";
     std::cout << "Total cycles: " << cycles << "\n";
+
+
+    std::tuple<uint32_t, uint32_t> parsedAddress;
+    parsedAddress = parseAddress(std::stoul("2005e654", nullptr, 16), cache, index_len, offset_len);
+    uint32_t tag, index;
+    tag = std::get<0>(parsedAddress);
+    index = std::get<1>(parsedAddress);
+    std::cout << tag <<"\n" << index << "\n";
     return 0;
 }
 

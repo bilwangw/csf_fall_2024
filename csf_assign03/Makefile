@@ -1,6 +1,6 @@
 CC = g++
 FLAGS = -Wall -Wextra -pedantic
-
+.PHONY: csim
 MAIN = main.cpp
 
 csim : $(MAIN_OBJS)
