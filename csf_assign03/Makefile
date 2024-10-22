@@ -1,5 +1,5 @@
 CC = g++
-FLAGS = -Wall -Wextra -pedantic
+FLAGS = -Wall -Wextra -pedantic -g
 .PHONY: csim
 MAIN = main.cpp
 

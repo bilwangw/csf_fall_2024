@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <tuple>
 // ./csim 256 4 16 write-allocate write-back fifo < traces/hits.trace
 //256 sets, 4 blocks, 16 bits in each block (offset size)
@@ -30,14 +30,12 @@ struct Slot {
     bool valid, dirty;
     uint32_t load_ts, access_ts;
 
-    Slot() : tag(0), valid(false), dirty(false), load_ts(0), access_ts(0) {
-
-    }
+    Slot() : tag(0), valid(false), dirty(false), load_ts(0), access_ts(0) {}
 };
 
 struct Set {
     std::vector<Slot> slots;
-    std::map<uint32_t, Slot *> index;
+    std::unordered_map<uint32_t, Slot *> index;
 };
 
 struct Cache {
@@ -74,6 +72,37 @@ void writeToSlot(Cache &cache, uint index, uint32_t tag, uint slot) {
     cache.sets[index].slots[slot].access_ts = currentTime;
 }
 
+void writeToMap(Cache &cache, uint index, uint32_t tag, bool lru_fifo) {
+    // Maps tag key to an appropriate slot (using lru or fifo)
+    std::vector<Slot>::iterator it;
+    uint32_t oldest;
+    uint32_t slot = 0;
+    if (lru_fifo) { // check load or access time to determine which to replace depending on lru or fifo
+        oldest = cache.sets[index].slots[0].load_ts; // set oldest time to first element in slots vector
+        for(it = std::next(cache.sets[index].slots.begin(),1); it != cache.sets[index].slots.end(); it++ )    {
+            if(it->load_ts < oldest) { // if any times are older, set that slot to new oldest
+                oldest = it->load_ts;
+                slot = distance(cache.sets[index].slots.begin(), it); // set the slot index to the index of the new oldest
+            }
+        }
+    }
+    else {
+        oldest = cache.sets[index].slots[0].access_ts;
+        for(it = std::next(cache.sets[index].slots.begin(),1); it != cache.sets[index].slots.end(); it++ )    {
+            if(it->access_ts < oldest) { // if any times are older, set that slot to new oldest
+                oldest = it->access_ts;
+                slot = distance(cache.sets[index].slots.begin(), it); // set the slot index to the index of the new oldest
+            }
+        }
+    }
+    cache.sets[index].index[tag] = &cache.sets[index].slots[slot]; // assign the tag to oldest slot
+    writeToSlot(cache, index, tag, slot); // write data to slot
+}
+
+void mapUpdateTs(Cache &cache, uint index, uint32_t tag) {
+    cache.sets[index].index[tag]->access_ts = currentTime;
+}
+
 void updateTimestamp(Cache &cache, uint index, uint slot) {
     cache.sets[index].slots[slot].access_ts = currentTime;
 }
@@ -84,27 +113,57 @@ void loadBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len, 
     parsedAddress = parseAddress(address, cache, index_len, offset_len);
     tag = std::get<0>(parsedAddress);
     index = std::get<1>(parsedAddress);
-    
-    if(cache.sets[index].slots.size() == 1) { // direct mapped case
-        if(cache.sets[index].slots[0].valid) { // check if slot is filled
-            if(cache.sets[index].slots[0].tag == tag) { // if the tag and index match, we load successfully
+
+    //----------------EXPERIMENTAL-----------------
+    if(cache.sets[index].index.count(tag)) { // check if this tag is in the map
+        if(cache.sets[index].index[tag]->valid) { // check if slot is filled
+            if(cache.sets[index].index[tag]->tag == tag) { // if the tag and index match, we load successfully
                 load_hits++;
                 cycles++;
-                updateTimestamp(cache, index, 0); // update last access timestamp
+                mapUpdateTs(cache, index, tag);
             }
             else {
                 load_misses++;
                 cycles++;
-                writeToSlot(cache, index, tag, 0); // overwrite old with new data
+                writeToMap(cache, index, tag, lru_fifo);
             }
         }
         else { // empty slot, load from mem
             load_misses++;
             cycles++;
             cycles+=offset_len*100;
-            writeToSlot(cache, index, tag, 0);
+            writeToMap(cache, index, tag, lru_fifo);
         }
     }
+    else { // empty slot, load from mem
+        load_misses++;
+        cycles++;
+        cycles+=offset_len*100;
+        writeToMap(cache, index, tag, lru_fifo);
+    }
+    //-----------------END EXPERIMENTAL----------------
+
+    ////-----------------------------WORKING CODE BELOW---------------------------------
+    // if(cache.sets[index].slots.size() == 1) { // direct mapped case
+    //     if(cache.sets[index].slots[0].valid) { // check if slot is filled
+    //         if(cache.sets[index].slots[0].tag == tag) { // if the tag and index match, we load successfully
+    //             load_hits++;
+    //             cycles++;
+    //             updateTimestamp(cache, index, 0); // update last access timestamp
+    //         }
+    //         else {
+    //             load_misses++;
+    //             cycles++;
+    //             writeToSlot(cache, index, tag, 0); // overwrite old with new data
+    //         }
+    //     }
+    //     else { // empty slot, load from mem
+    //         load_misses++;
+    //         cycles++;
+    //         cycles+=offset_len*100;
+    //         writeToSlot(cache, index, tag, 0);
+    //     }
+    // }
 }
 
 void storeBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len, bool wAlloc, bool wBackThru, bool lru_fifo) {
@@ -212,12 +271,11 @@ int main (int argc, char *argv[])  {
 
 
     std::vector<Set>::iterator it;
-    int i;
 
     Slot blank_slot;
     blank_slot.valid = false;
     blank_slot.dirty = false;
-    for(it = sets.begin(); it != sets.end(); it++,i++ )    {
+    for(it = sets.begin(); it != sets.end(); it++ )    {
         std::vector<Slot> slots(num_blocks);
         it->slots = slots;
     }
