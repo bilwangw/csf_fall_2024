@@ -86,23 +86,43 @@ void loadBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len, 
     index = std::get<1>(parsedAddress);
     
     if(cache.sets[index].slots.size() == 1) { // direct mapped case
-        if(cache.sets[index].slots[0].valid) { // if slot is valid, then it is filled
-            if(cache.sets[index].slots[0].tag == tag) {
+        if(cache.sets[index].slots[0].valid) { // check if slot is filled
+            if(cache.sets[index].slots[0].tag == tag) { // if the tag and index match, we load successfully
                 load_hits++;
-                updateTimestamp(cache, index, 0);
+                cycles++;
+                updateTimestamp(cache, index, 0); // update last access timestamp
             }
-            else { // different tag, same slot
+            else {
                 load_misses++;
+                cycles++;
+                writeToSlot(cache, index, tag, 0); // overwrite old with new data
             }
-            writeToSlot(cache, index, tag, 0); // either way, update timestamp
-            cycles++;
         }
-        else { // slot is invalid, so it is empty
+        else { // empty slot, load from mem
             load_misses++;
             cycles++;
-            writeToSlot(cache, index, tag, 0); // so block is empty, so load from mem
-            cycles+=(2<<(offset_len-3))*25; // 100 cycles per 4 bytes being transferred, so 2^offset_len bits, divide by 8 (to get bytes), times 25 cycles/byte
+            cycles+=offset_len*100;
+            writeToSlot(cache, index, tag, 0);
         }
+
+
+        // if(cache.sets[index].slots[0].valid) { // if slot is valid, then it is filled
+        //     if(cache.sets[index].slots[0].tag == tag) {
+        //         load_hits++;
+        //         updateTimestamp(cache, index, 0);
+        //     }
+        //     else { // different tag, same slot
+        //         load_misses++;
+        //     }
+        //     writeToSlot(cache, index, tag, 0); // either way, update timestamp
+        //     cycles++;
+        // }
+        // else { // slot is invalid, so it is empty
+        //     load_misses++;
+        //     cycles++;
+        //     writeToSlot(cache, index, tag, 0); // so block is empty, so load from mem
+        //     cycles+=(2<<(offset_len-3))*25; // 100 cycles per 4 bytes being transferred, so 2^offset_len bits, divide by 8 (to get bytes), times 25 cycles/byte
+        // }
     }
 }
 
@@ -114,25 +134,44 @@ void storeBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len,
     index = std::get<1>(parsedAddress);
     //if(!wAlloc && wBackThru) {// no-write-allocate and write-through
         if(cache.sets[index].slots.size() == 1) { // check direct mapped case
-            if(cache.sets[index].slots[0].valid == true) { // if slot is valid, this is a hit
-                if(cache.sets[index].slots[0].tag == tag) { // if tags match, then successful store
-                    //std::cout << "storehit";
+            if(cache.sets[index].slots[0].valid) { // check if slot is filled (valid = true)
+                if(cache.sets[index].slots[0].tag == tag) { // check if tags are equal
                     updateTimestamp(cache, index, 0);
                     store_hits++;
                     cycles++;
+                    cycles+=offset_len*100;
                 }
-                else { // if tags do not match, need to update slot
-                    //std::cout << "storemiss tag false";
-                    writeToSlot(cache, index, tag, 0);
+                else {
                     store_misses++;
                     cycles++;
                 }
             }
-            else { // this is a miss
-                writeToSlot(cache, index, tag, 0);
+            else { // for no-write-allocate do nothing
                 store_misses++;
                 cycles++;
             }
+
+
+
+            // if(cache.sets[index].slots[0].valid == true) { // if slot is valid, this is a hit
+            //     if(cache.sets[index].slots[0].tag == tag) { // if tags match, then successful store
+            //         //std::cout << "storehit";
+            //         updateTimestamp(cache, index, 0);
+            //         store_hits++;
+            //         cycles++;
+            //     }
+            //     else { // if tags do not match, need to update slot
+            //         //std::cout << "storemiss tag false";
+            //         writeToSlot(cache, index, tag, 0);
+            //         store_misses++;
+            //         cycles++;
+            //     }
+            // }
+            // else { // this is a miss
+            //     writeToSlot(cache, index, tag, 0);
+            //     store_misses++;
+            //     cycles++;
+            // }
 
         }
     //}
@@ -233,17 +272,6 @@ int main (int argc, char *argv[])  {
     std::string address; // memory address
     std::string dummy; // dummy variable to store third argument, necessary for iterating through cin
 
-    // std::cin >> op;
-    // std::cin >> address;
-    // std::cout << address << "\n";
-    // std::cout << stoul(address.substr(2),nullptr, 16) << "\n";
-    // std::tuple<uint32_t, uint32_t> parsedAddress;
-    // parsedAddress = parseAddress(stoul(address.substr(2),nullptr, 16), cache, index_len, offset_len);
-    // uint32_t tag, index;
-    // tag = std::get<0>(parsedAddress);
-    // index = std::get<1>(parsedAddress);
-    // std::cout << tag <<"\n" << index << "\n";
-
     while(std::cin >> op) {
         std::cin >> address;
         std::cin >> dummy;
@@ -257,15 +285,6 @@ int main (int argc, char *argv[])  {
         }
     }
 
-    for (int i = 0; i < num_sets; i++) {
-        //std::cout << "tags: " << cache.sets[i].slots[0].tag << "\n";
-        std::cout << cache.sets[i].slots.size()<< "\n";
-        //std::cout << cache.sets[i].slots[0].load_ts << "\n";
-        for(uint32_t j = 0; j < cache.sets[i].slots.size(); j++) {
-            std::cout << cache.sets[i].slots[j].tag << "\n";
-        }
-    }
-
     std::cout << "Total loads: " << loads << "\n";
     std::cout << "Total stores: " << stores << "\n";
     std::cout << "Load hits: " << load_hits << "\n";
@@ -275,12 +294,12 @@ int main (int argc, char *argv[])  {
     std::cout << "Total cycles: " << cycles << "\n";
 
 
-    std::tuple<uint32_t, uint32_t> parsedAddress;
-    parsedAddress = parseAddress(std::stoul("2005e654", nullptr, 16), cache, index_len, offset_len);
-    uint32_t tag, index;
-    tag = std::get<0>(parsedAddress);
-    index = std::get<1>(parsedAddress);
-    std::cout << tag <<"\n" << index << "\n";
+    // std::tuple<uint32_t, uint32_t> parsedAddress;
+    // parsedAddress = parseAddress(std::stoul("2005e654", nullptr, 16), cache, index_len, offset_len);
+    // uint32_t tag, index;
+    // tag = std::get<0>(parsedAddress);
+    // index = std::get<1>(parsedAddress);
+    // std::cout << tag <<"\n" << index << "\n";
     return 0;
 }
 
