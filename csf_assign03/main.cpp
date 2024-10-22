@@ -104,25 +104,6 @@ void loadBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len, 
             cycles+=offset_len*100;
             writeToSlot(cache, index, tag, 0);
         }
-
-
-        // if(cache.sets[index].slots[0].valid) { // if slot is valid, then it is filled
-        //     if(cache.sets[index].slots[0].tag == tag) {
-        //         load_hits++;
-        //         updateTimestamp(cache, index, 0);
-        //     }
-        //     else { // different tag, same slot
-        //         load_misses++;
-        //     }
-        //     writeToSlot(cache, index, tag, 0); // either way, update timestamp
-        //     cycles++;
-        // }
-        // else { // slot is invalid, so it is empty
-        //     load_misses++;
-        //     cycles++;
-        //     writeToSlot(cache, index, tag, 0); // so block is empty, so load from mem
-        //     cycles+=(2<<(offset_len-3))*25; // 100 cycles per 4 bytes being transferred, so 2^offset_len bits, divide by 8 (to get bytes), times 25 cycles/byte
-        // }
     }
 }
 
@@ -150,29 +131,6 @@ void storeBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len,
                 store_misses++;
                 cycles++;
             }
-
-
-
-            // if(cache.sets[index].slots[0].valid == true) { // if slot is valid, this is a hit
-            //     if(cache.sets[index].slots[0].tag == tag) { // if tags match, then successful store
-            //         //std::cout << "storehit";
-            //         updateTimestamp(cache, index, 0);
-            //         store_hits++;
-            //         cycles++;
-            //     }
-            //     else { // if tags do not match, need to update slot
-            //         //std::cout << "storemiss tag false";
-            //         writeToSlot(cache, index, tag, 0);
-            //         store_misses++;
-            //         cycles++;
-            //     }
-            // }
-            // else { // this is a miss
-            //     writeToSlot(cache, index, tag, 0);
-            //     store_misses++;
-            //     cycles++;
-            // }
-
         }
     //}
 }
