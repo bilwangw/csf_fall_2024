@@ -250,11 +250,7 @@ int main (int argc, char *argv[])  {
     std::string arg4(argv[4]);
     std::string arg5(argv[5]);
     std::string arg6(argv[6]);
-    if (
-        ceil(log2(std::atoi(argv[1]))) != floor(log2(std::atoi(argv[1]))) // check if num sets is power of 2
-    ) {
-        // std::cout << argv[1] << "\n";
-        // std::cout << std::atoi(argv[1]) << "\n";
+    if (ceil(log2(std::atoi(argv[1]))) != floor(log2(std::atoi(argv[1])))) {// check if num sets is power of 2
         std::cerr << "Number of sets is not a power of 2\n";
         return 1;
     }
@@ -269,34 +265,24 @@ int main (int argc, char *argv[])  {
     else if (std::atoi(argv[3]) < 4) {  // check if block size is at least 4
         std::cerr << "Block size is not greater than or equal to 4\n";
     }
-    else {
-        if (arg4 != "write-allocate" && arg4 != "no-write-allocate") {
-            std::cerr << "Invalid argument, must be write-allocate or no-write-allocate\n";
-            return 1;
-        }
-        if (arg5 != "write-through" && arg5 != "write-back") {
-            std::cerr << "Invalid argument, must be write-through or write-back\n";
-            return 1;
-        }
-        if (arg6 != "lru" && arg6 != "fifo") {
-            std::cerr << "Invalid argument, must be lru or fifo\n";
-            return 1;
-        }
-        if (arg5 == "write-back" && arg4 == "no-write-allocate") {
+    else if (arg5 == "write-back" && arg4 == "no-write-allocate") {
             std::cerr << "write-back and no-write-allocate cannot be used at the same time\n";
             return 1;
-        }
-        
     }
     bool wAlloc; // false is no-write-allocate, true is write-allocate
     bool wBackThru; // false is write-back, true is write-through
     bool lru_fifo; // false is lru, true is fifo
 
+    // store cache configuration options to booleans
     if (arg4 == "write-allocate") {
         wAlloc = 1;
     }
     else if (arg4 == "no-write-allocate") {
         wAlloc = 0;
+    }
+    else {
+        std::cerr << "Invalid argument, must be write-allocate or no-write-allocate\n";
+        return 1;
     }
     if (arg5 == "write-through") {
         wBackThru = 1;
@@ -304,11 +290,19 @@ int main (int argc, char *argv[])  {
     else if (arg5 == "write-back") {
         wBackThru = 0;
     }
+    else {
+        std::cerr << "Invalid argument, must be write-through or write-back\n";
+        return 1;
+    }
     if (arg6 == "lru") {
         lru_fifo = 0;
     }
     else if (arg6 == "fifo") {
         lru_fifo = 1;
+    }
+    else {
+        std::cerr << "Invalid argument, must be lru or fifo\n";
+        return 1;
     }
     uint32_t num_sets = std::atoi(argv[1]);
     uint index_len = log2(num_sets); // get the bit length of sets
@@ -337,10 +331,11 @@ int main (int argc, char *argv[])  {
     std::string address; // memory address
     std::string dummy; // dummy variable to store third argument, necessary for iterating through cin
 
-    while(std::cin >> op) {
-        std::cin >> address;
-        std::cin >> dummy;
-        currentTime++;
+    // Read through the trace file line by line
+    while(std::cin >> op) { // store l or s in op
+        std::cin >> address; // store memory address
+        std::cin >> dummy; // store third number in dummy buffer
+        currentTime++; // increment global time
         if (op == 'l') {
             loadBlock(stoul(address.substr(2),nullptr, 16), cache, index_len, offset_len, wBackThru, lru_fifo);
             loads++;
@@ -359,13 +354,6 @@ int main (int argc, char *argv[])  {
     std::cout << "Store misses: " << store_misses << "\n";
     std::cout << "Total cycles: " << cycles << "\n";
 
-
-    // std::tuple<uint32_t, uint32_t> parsedAddress;
-    // parsedAddress = parseAddress(std::stoul("2005e654", nullptr, 16), cache, index_len, offset_len);
-    // uint32_t tag, index;
-    // tag = std::get<0>(parsedAddress);
-    // index = std::get<1>(parsedAddress);
-    // std::cout << tag <<"\n" << index << "\n";
     return 0;
 }
 
