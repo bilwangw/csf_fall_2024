@@ -54,11 +54,16 @@ uint32_t store_misses = 0;
 uint32_t cycles = 0;
 
 std::tuple<uint32_t, uint32_t> parseAddress(uint32_t address, Cache &cache, uint index_len, uint offset_len) {
-    currentTime++; // increment time stamp
+    //currentTime++; // increment time stamp
     uint32_t index;
     uint32_t tag;
     //index = (address%(2<<(offset_len + index_len - 1))) >> offset_len;
-    index = (address<<(32 - offset_len - index_len)) >> (32 - index_len);
+    if(index_len == 0) {
+        index = 0;
+    }
+    else {
+        index = (address<<(32 - offset_len - index_len)) >> (32 - index_len);
+    }
     tag = address >> (offset_len + index_len);
 
     return std::make_tuple(tag, index);
@@ -80,6 +85,10 @@ void writeToMap(Cache &cache, uint index, uint32_t tag, bool lru_fifo) {
     if (lru_fifo) { // check load or access time to determine which to replace depending on lru or fifo
         oldest = cache.sets[index].slots[0].load_ts; // set oldest time to first element in slots vector
         for(it = std::next(cache.sets[index].slots.begin(),1); it != cache.sets[index].slots.end(); it++ )    {
+            if(!(it->valid)) {
+                slot = distance(cache.sets[index].slots.begin(), it);
+                break;
+            }
             if(it->load_ts < oldest) { // if any times are older, set that slot to new oldest
                 oldest = it->load_ts;
                 slot = distance(cache.sets[index].slots.begin(), it); // set the slot index to the index of the new oldest
@@ -89,12 +98,18 @@ void writeToMap(Cache &cache, uint index, uint32_t tag, bool lru_fifo) {
     else {
         oldest = cache.sets[index].slots[0].access_ts;
         for(it = std::next(cache.sets[index].slots.begin(),1); it != cache.sets[index].slots.end(); it++ )    {
+            if(!(it->valid)) {
+                slot = distance(cache.sets[index].slots.begin(), it);
+                break;
+            }
             if(it->access_ts < oldest) { // if any times are older, set that slot to new oldest
                 oldest = it->access_ts;
                 slot = distance(cache.sets[index].slots.begin(), it); // set the slot index to the index of the new oldest
             }
         }
     }
+    
+    cache.sets[index].index.erase(cache.sets[index].slots[slot].tag);
     cache.sets[index].index[tag] = &cache.sets[index].slots[slot]; // assign the tag to oldest slot
     writeToSlot(cache, index, tag, slot); // write data to slot
 }
@@ -117,16 +132,20 @@ void loadBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len, 
     //----------------EXPERIMENTAL-----------------
     if(cache.sets[index].index.count(tag)) { // check if this tag is in the map
         if(cache.sets[index].index[tag]->valid) { // check if slot is filled
-            if(cache.sets[index].index[tag]->tag == tag) { // if the tag and index match, we load successfully
-                load_hits++;
-                cycles++;
-                mapUpdateTs(cache, index, tag);
-            }
-            else {
-                load_misses++;
-                cycles++;
-                writeToMap(cache, index, tag, lru_fifo);
-            }
+            load_hits++;
+            cycles++;
+            mapUpdateTs(cache, index, tag);
+            // if(cache.sets[index].index[tag]->tag == tag) { // if the tag and index match, we load successfully
+            //     load_hits++;
+            //     cycles++;
+            //     mapUpdateTs(cache, index, tag);
+            // }
+            // else {
+            //     load_misses++;
+            //     cycles++;
+            //     cycles+=offset_len*100;
+            //     writeToMap(cache, index, tag, lru_fifo);
+            // }
         }
         else { // empty slot, load from mem
             load_misses++;
@@ -172,26 +191,93 @@ void storeBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len,
     parsedAddress = parseAddress(address, cache, index_len, offset_len);
     tag = std::get<0>(parsedAddress);
     index = std::get<1>(parsedAddress);
-    //if(!wAlloc && wBackThru) {// no-write-allocate and write-through
-        if(cache.sets[index].slots.size() == 1) { // check direct mapped case
-            if(cache.sets[index].slots[0].valid) { // check if slot is filled (valid = true)
-                if(cache.sets[index].slots[0].tag == tag) { // check if tags are equal
-                    updateTimestamp(cache, index, 0);
-                    store_hits++;
-                    cycles++;
-                    cycles+=offset_len*100;
+
+//----------------EXPERIMENTAL-----------------
+    if(cache.sets[index].slots.size() == 1) { // check direct mapped case
+        if(cache.sets[index].slots[0].valid) { // check if slot is filled (valid = true)
+            if(cache.sets[index].slots[0].tag == tag) { // check if tags are equal
+                updateTimestamp(cache, index, 0);
+                store_hits++;
+                cycles++;
+                cycles+=offset_len*100;
+            }
+            else {
+                store_misses++;
+                if(wAlloc) {
+                    writeToMap(cache, index, tag, lru_fifo);
                 }
                 else {
-                    store_misses++;
                     cycles++;
                 }
             }
-            else { // for no-write-allocate do nothing
-                store_misses++;
+        }
+        else { // for no-write-allocate do nothing
+            store_misses++;
+            if(wAlloc) {
+                writeToMap(cache, index, tag, lru_fifo);
+            }
+            else {
                 cycles++;
             }
         }
-    //}
+    }
+    else if(cache.sets[index].index.count(tag) > 0) { // check if this tag is in the map
+        if(cache.sets[index].index[tag]->valid) { // check if slot is filled
+            store_hits++;
+            mapUpdateTs(cache, index, tag);
+            // if(cache.sets[index].index[tag]->tag == tag) { // if the tag and index match, we load successfully
+            //     store_hits++;
+            //     mapUpdateTs(cache, index, tag);
+            // }
+            // else {
+            //     store_misses++;
+            //     if(wAlloc) {
+            //         writeToMap(cache, index, tag, lru_fifo);
+            //         cycles+=offset_len*100;
+            //     }
+            //     cycles++;
+            // }
+        }
+        else {
+            store_misses++;
+            if(wAlloc) {
+                writeToMap(cache, index, tag, lru_fifo);
+                cycles+=offset_len*100;
+            }
+            cycles++;
+        }
+    }
+    else {
+        store_misses++;
+        if(wAlloc) {
+            writeToMap(cache, index, tag, lru_fifo);
+            cycles+=offset_len*100;
+        }
+        cycles++;
+    }
+    //-----------------END EXPERIMENTAL----------------
+
+
+    // //if(!wAlloc && wBackThru) {// no-write-allocate and write-through
+    //     if(cache.sets[index].slots.size() == 1) { // check direct mapped case
+    //         if(cache.sets[index].slots[0].valid) { // check if slot is filled (valid = true)
+    //             if(cache.sets[index].slots[0].tag == tag) { // check if tags are equal
+    //                 updateTimestamp(cache, index, 0);
+    //                 store_hits++;
+    //                 cycles++;
+    //                 cycles+=offset_len*100;
+    //             }
+    //             else {
+    //                 store_misses++;
+    //                 cycles++;
+    //             }
+    //         }
+    //         else { // for no-write-allocate do nothing
+    //             store_misses++;
+    //             cycles++;
+    //         }
+    //     }
+    // //}
 }
 
 
@@ -242,25 +328,24 @@ int main (int argc, char *argv[])  {
     bool wBackThru; // false is write-back, true is write-through
     bool lru_fifo; // false is lru, true is fifo
 
-    if (arg4.compare("write-allocate")) {
+    if (arg4 == "write-allocate") {
         wAlloc = 1;
     }
-    else if (arg4.compare("no-write-allocate")) {
+    else if (arg4 == "no-write-allocate") {
         wAlloc = 0;
     }
-    if (arg5.compare("write-through")) {
+    if (arg5 == "write-through") {
         wBackThru = 1;
     }
-    else if (arg5.compare("write-back")) {
+    else if (arg5 == "write-back") {
         wBackThru = 0;
     }
-    if (arg6.compare("lru")) {
+    if (arg6 == "lru") {
         lru_fifo = 0;
     }
-    else if (arg6.compare("fifo")) {
+    else if (arg6 == "fifo") {
         lru_fifo = 1;
     }
-
     uint32_t num_sets = std::atoi(argv[1]);
     uint index_len = log2(num_sets); // get the bit length of sets
     uint32_t num_blocks = std::atoi(argv[2]);
@@ -291,6 +376,7 @@ int main (int argc, char *argv[])  {
     while(std::cin >> op) {
         std::cin >> address;
         std::cin >> dummy;
+        currentTime++;
         if (op == 'l') {
             loadBlock(stoul(address.substr(2),nullptr, 16), cache, index_len, offset_len, lru_fifo);
             loads++;
