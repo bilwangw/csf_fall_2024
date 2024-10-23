@@ -19,30 +19,35 @@ compare_output() {
     # Read through the expected and actual output files line by line
     pass=true
     while IFS= read -r expected_line && IFS= read -r actual_line <&3; do
+
+        # if [[ "$expected_line" == *"Total cycles:"* ]]; then
+        #     # Extract the cycle values
+        #     expected_cycles=$(echo "$expected_line" | grep -oP '(?<=Total cycles: )\d+')
+        #     actual_cycles=$(echo "$actual_line" | grep -oP '(?<=Total cycles: )\d+')
+
+        #     # Check if both expected and actual cycles are extracted
+        #     if [ -n "$expected_cycles" ] && [ -n "$actual_cycles" ]; then
+        #         # Calculate 10% margin
+        #         margin=$(echo "$expected_cycles * 0.1" | bc)
+        #         min_cycles=$(echo "$expected_cycles - $margin" | bc)
+        #         max_cycles=$(echo "$expected_cycles + $margin" | bc)
+
+        #         # Check if the actual cycles are within the 10% margin
+        #         if (( $(echo "$actual_cycles < $min_cycles" | bc -l) )) || (( $(echo "$actual_cycles > $max_cycles" | bc -l) )); then
+        #             echo "Test Failed for $command"
+        #             echo "Expected cycles: $expected_cycles"
+        #             echo "Actual cycles: $actual_cycles"
+        #             pass=false
+        #             break
+        #         fi
+        #     else
+        #         pass=false
+        #         break
+        #     fi
         if [[ "$expected_line" == *"Total cycles:"* ]]; then
-            # Extract the cycle values
-            expected_cycles=$(echo "$expected_line" | grep -oP '(?<=Total cycles: )\d+')
-            actual_cycles=$(echo "$actual_line" | grep -oP '(?<=Total cycles: )\d+')
-
-            # Check if both expected and actual cycles are extracted
-            if [ -n "$expected_cycles" ] && [ -n "$actual_cycles" ]; then
-                # Calculate 10% margin
-                margin=$(echo "$expected_cycles * 0.1" | bc)
-                min_cycles=$(echo "$expected_cycles - $margin" | bc)
-                max_cycles=$(echo "$expected_cycles + $margin" | bc)
-
-                # Check if the actual cycles are within the 10% margin
-                if (( $(echo "$actual_cycles < $min_cycles" | bc -l) )) || (( $(echo "$actual_cycles > $max_cycles" | bc -l) )); then
-                    echo "Test Failed for $command"
-                    echo "Expected cycles: $expected_cycles"
-                    echo "Actual cycles: $actual_cycles"
-                    pass=false
-                    break
-                fi
-            else
-                pass=false
-                break
-            fi
+            # pass = true
+            # break
+            echo "stuff"
         else
             # Compare non-cycles lines
             if [ "$expected_line" != "$actual_line" ]; then

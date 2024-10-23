@@ -73,8 +73,10 @@ void writeToSlot(Cache &cache, uint index, uint32_t tag, uint slot) {
     cache.sets[index].slots[slot].valid = true;
     //cache.sets[index].slots[slot].dirty = true;
     cache.sets[index].slots[slot].tag = tag;
+    currentTime++;
     cache.sets[index].slots[slot].load_ts = currentTime;
     cache.sets[index].slots[slot].access_ts = currentTime;
+    
 }
 
 bool writeToMap(Cache &cache, uint index, uint32_t tag, bool lru_fifo) {
@@ -119,10 +121,12 @@ bool writeToMap(Cache &cache, uint index, uint32_t tag, bool lru_fifo) {
 }
 
 void mapUpdateTs(Cache &cache, uint index, uint32_t tag) {
+    currentTime++;
     cache.sets[index].index[tag]->access_ts = currentTime;
 }
 
 void updateTimestamp(Cache &cache, uint index, uint slot) {
+    currentTime++;
     cache.sets[index].slots[slot].access_ts = currentTime;
 }
 
@@ -132,7 +136,8 @@ void loadBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len, 
     parsedAddress = parseAddress(address, cache, index_len, offset_len);
     tag = std::get<0>(parsedAddress);
     index = std::get<1>(parsedAddress);
-
+    int cycle_mult = 1 << offset_len;
+    cycle_mult /= 4; 
     //----------------EXPERIMENTAL-----------------
     if(cache.sets[index].index.count(tag)) { // check if this tag is in the map
         if(cache.sets[index].index[tag]->valid) { // check if slot is filled
@@ -143,20 +148,21 @@ void loadBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len, 
         else { // empty slot, load from mem
             load_misses++;
             cycles++;
-            cycles+=offset_len*100; // load from memory cycle
+            cycles+=cycle_mult*100; // load from memory cycle
             if(writeToMap(cache, index, tag, lru_fifo) && !wBackThru) { // check if dirty bit is evicted and if write-back enabled
-                cycles+=offset_len*100; // if dirty block evicted, need to store to memory
+                cycles+=cycle_mult*100; // if dirty block evicted, need to store to memory
             }
         }
     }
     else { // empty slot, load from mem
         load_misses++;
         cycles++;
-        cycles+=offset_len*100;
+        cycles+=cycle_mult*100;
         if(writeToMap(cache, index, tag, lru_fifo) && !wBackThru) { // check if dirty bit is evicted and if write-back enabled
-            cycles+=offset_len*100; // if dirty block evicted, need to store to memory
+            cycles+=cycle_mult*100; // if dirty block evicted, need to store to memory
         }
     }
+    currentTime++;
     //-----------------END EXPERIMENTAL----------------
 
     ////-----------------------------WORKING CODE BELOW---------------------------------
@@ -182,28 +188,60 @@ void loadBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len, 
     // }
 }
 
+void storeDirtyBits(Cache &cache, uint index_len, uint offset_len) {
+    std::vector<Set> sets = cache.sets;
+    int dirtyCount = 0;
+    for(std::vector<Set>::iterator it = sets.begin(); it != sets.end(); it++ )    {
+        std::vector<Slot> slots = it->slots;
+        for (std::vector<Slot>::iterator f = slots.begin(); f != slots.end(); f++) {
+            if (f->dirty) {
+                dirtyCount++;
+            }
+        } 
+    }
+    int cycle_mult = 1 << offset_len;
+    cycle_mult /= 4; 
+    cycles += cycle_mult * 100;
+}
 void storeBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len, bool wAlloc, bool wBackThru, bool lru_fifo) {
     uint32_t tag, index;
     std::tuple<uint32_t, uint32_t> parsedAddress;
     parsedAddress = parseAddress(address, cache, index_len, offset_len);
     tag = std::get<0>(parsedAddress);
     index = std::get<1>(parsedAddress);
-
+    int cycle_mult = 1 << offset_len;
+    cycle_mult /= 4; 
 //----------------EXPERIMENTAL-----------------
     if(cache.sets[index].index.count(tag) > 0) { // check if this tag is in the map
         if(cache.sets[index].index[tag]->valid) { // check if slot is filled
             store_hits++;
             mapUpdateTs(cache, index, tag);
             cycles++;
+            if (wBackThru) {
+                cycles+=cycle_mult*100;
+            }
+            else {
+                // if (writeToMap(cache, index, tag, lru_fifo)) {
+                //     cycles+=cycle_mult*100;
+                // }
+                cache.sets[index].index[tag]->dirty = true;
+            }
         }
         else {
             store_misses++;
             if(wAlloc) {
-                writeToMap(cache, index, tag, lru_fifo);
                 if(!wBackThru) {
+                    if (writeToMap(cache, index, tag, lru_fifo)) {
+                        cycles+=cycle_mult*100;
+                    }
                     cache.sets[index].index[tag]->dirty = true;
+                } else {
+                    writeToMap(cache, index, tag, lru_fifo);
+                    cycles+=cycle_mult*100;
                 }
-                cycles+=offset_len*100;
+                
+            } else {
+               cycles+=cycle_mult*100; 
             }
             cycles++;
         }
@@ -211,11 +249,18 @@ void storeBlock(uint32_t address, Cache &cache, uint index_len, uint offset_len,
     else {
         store_misses++;
         if(wAlloc) {
-            writeToMap(cache, index, tag, lru_fifo);
-            cycles+=offset_len*100;
             if(!wBackThru) {
+                if (writeToMap(cache, index, tag, lru_fifo)) {
+                    cycles+=cycle_mult*100;
+                }
                 cache.sets[index].index[tag]->dirty = true;
+            } else {
+                writeToMap(cache, index, tag, lru_fifo);
+                cycles+=cycle_mult*100;
             }
+        }
+        else {
+            cycles+=cycle_mult*100; 
         }
         cycles++;
     }
@@ -345,7 +390,7 @@ int main (int argc, char *argv[])  {
             stores++;
         }
     }
-
+    storeDirtyBits(cache, index_len, offset_len);
     std::cout << "Total loads: " << loads << "\n";
     std::cout << "Total stores: " << stores << "\n";
     std::cout << "Load hits: " << load_hits << "\n";
