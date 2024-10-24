@@ -4,4 +4,4 @@ Load hits: 429539
 Load misses: 25202
 Store hits: 20458
 Store misses: 24789
-Total cycles: 81149588
+Total cycles: 237840788
