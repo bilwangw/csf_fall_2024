@@ -36,7 +36,6 @@ struct Slot {
 
 struct Set {
     std::vector<Slot> slots;
-    std::unordered_map<uint32_t, Slot *> index;
 };
 
 struct Cache {
@@ -58,7 +57,6 @@ uint32_t cycle_mult;
 
 void writeToMap(Cache &cache, uint32_t index, uint32_t tag, bool lru_fifo, bool wBackThru) {
     //find oldest block in slots vector
-    //currentTime++;
     uint32_t oldest = 4294967295;
     int best_index = 0;
     for (size_t i = 0; i < cache.sets[index].slots.size(); i++) {
@@ -74,13 +72,14 @@ void writeToMap(Cache &cache, uint32_t index, uint32_t tag, bool lru_fifo, bool 
     if (cache.sets[index].slots[best_index].dirty && !wBackThru) {
         cycles += cycle_mult * 100;
     }
+    //overwrite existing or blank slot
     cache.sets[index].slots[best_index].tag = tag;
     cache.sets[index].slots[best_index].valid = true;
     cache.sets[index].slots[best_index].dirty = true;
     cache.sets[index].slots[best_index].access_ts = currentTime++;
     cache.sets[index].slots[best_index].load_ts = currentTime++;
 }
-
+// update the timestamps
 void mapUpdateTs(Cache &cache, uint32_t index, uint32_t tag) {
     for(size_t i = 0; i < cache.sets[index].slots.size(); i++) {
         if(cache.sets[index].slots[i].tag == tag) {
@@ -88,7 +87,7 @@ void mapUpdateTs(Cache &cache, uint32_t index, uint32_t tag) {
         }
     }
 }
-
+// check if tag is valid
 bool tagIsValid(Cache &cache, uint32_t index, uint32_t tag) {
     for(size_t i = 0; i < cache.sets[index].slots.size(); i++) {
         if(cache.sets[index].slots[i].tag == tag) {
@@ -126,7 +125,7 @@ void storeBlock(Cache &cache, uint32_t tag, uint32_t index, bool wAlloc, bool wB
             //write straight to memory and cache
             mapUpdateTs(cache, index, tag);
             cycles++;
-            cycles += cycle_mult * 100;
+            cycles+= 100;
         } else {
             //write only to cache and mark as dirty
             mapUpdateTs(cache, index, tag);
@@ -144,13 +143,13 @@ void storeBlock(Cache &cache, uint32_t tag, uint32_t index, bool wAlloc, bool wB
             } else {
                 //access memory and overwrite current data in cache to be dirty, do not store in memory only in cache
                 writeToMap(cache, index, tag, lru_fifo, wBackThru);
+                cycles += cycle_mult * 100;
                 cycles++;
             }
         } else {
             if (wBackThru) {
                 //write directly to memory no involvement of cache
-                cycles += cycle_mult * 100;
-                //mapUpdateTs(cache, index, tag);
+                cycles += 100;
             }
         }
     }
@@ -161,6 +160,7 @@ int main (int argc, char *argv[])  {
     std::string arg4(argv[4]);
     std::string arg5(argv[5]);
     std::string arg6(argv[6]);
+    //error checking for malicious inputs
     if (ceil(log2(std::atoi(argv[1]))) != floor(log2(std::atoi(argv[1])))) {// check if num sets is power of 2
         std::cerr << "Number of sets is not a power of 2\n";
         return 1;
@@ -251,10 +251,12 @@ int main (int argc, char *argv[])  {
         index = (intAddress >> offset_len) & ((1 << index_len) - 1);
         
         if(op == 'l') {
+            //handle load case
             loads++;
             loadBlock(cache, tag, index, wBackThru, lru_fifo, cycle_mult);
         }
         else if (op == 's') {
+            //handle store case
             stores++;
             storeBlock(cache, tag, index, wAlloc, wBackThru, lru_fifo, cycle_mult);
         }
