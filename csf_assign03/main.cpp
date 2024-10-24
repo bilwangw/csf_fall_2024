@@ -56,12 +56,16 @@ uint32_t cycles = 0;
 uint32_t cycle_mult;
 
 
-void writeToMap(Cache &cache, uint index, uint32_t tag, bool lru_fifo, bool wBackThru) {
+void writeToMap(Cache &cache, uint32_t index, uint32_t tag, bool lru_fifo, bool wBackThru) {
     //find oldest block in slots vector
-    currentTime++;
+    //currentTime++;
     uint32_t oldest = 4294967295;
     int best_index = 0;
     for (size_t i = 0; i < cache.sets[index].slots.size(); i++) {
+        if(cache.sets[index].slots[i].valid == false) {
+            best_index = i;
+            break;
+        }
         if (oldest > cache.sets[index].slots[i].access_ts) {
             oldest = cache.sets[index].slots[i].access_ts;
             best_index = i;
@@ -70,24 +74,36 @@ void writeToMap(Cache &cache, uint index, uint32_t tag, bool lru_fifo, bool wBac
     if (cache.sets[index].slots[best_index].dirty && !wBackThru) {
         cycles += cycle_mult * 100;
     }
-    //add to map and change value in slot
-    cache.sets[index].index.erase(cache.sets[index].slots[best_index].tag);
     cache.sets[index].slots[best_index].tag = tag;
     cache.sets[index].slots[best_index].valid = true;
     cache.sets[index].slots[best_index].dirty = true;
     cache.sets[index].slots[best_index].access_ts = currentTime++;
     cache.sets[index].slots[best_index].load_ts = currentTime++;
-    cache.sets[index].index[tag] = &cache.sets[index].slots[best_index];
-    //cache.sets[index].index[tag]->access_ts = currentTime++;
 }
 
-void mapUpdateTs(Cache &cache, uint index, uint32_t tag) {
-    currentTime++;
-    cache.sets[index].index[tag]->access_ts = currentTime++;
+void mapUpdateTs(Cache &cache, uint32_t index, uint32_t tag) {
+    for(size_t i = 0; i < cache.sets[index].slots.size(); i++) {
+        if(cache.sets[index].slots[i].tag == tag) {
+            cache.sets[index].slots[i].access_ts = currentTime++;
+        }
+    }
 }
+
+bool tagIsValid(Cache &cache, uint32_t index, uint32_t tag) {
+    for(size_t i = 0; i < cache.sets[index].slots.size(); i++) {
+        if(cache.sets[index].slots[i].tag == tag) {
+            if(cache.sets[index].slots[i].valid == true) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 
 void loadBlock(Cache &cache, uint32_t tag, uint32_t index, bool wBackThru, bool lru_fifo, uint32_t cycle_mult) {
-    if(cache.sets[index].index.count(tag) > 0) {
+
+    if(tagIsValid(cache, index, tag)) {
         load_hits++;
         // update access ts
         mapUpdateTs(cache, index, tag);
@@ -104,7 +120,7 @@ void loadBlock(Cache &cache, uint32_t tag, uint32_t index, bool wBackThru, bool 
 }
 
 void storeBlock(Cache &cache, uint32_t tag, uint32_t index, bool wAlloc, bool wBackThru, bool lru_fifo, uint32_t cycle_mult) {
-    if(cache.sets[index].index.count(tag) > 0) {
+    if(tagIsValid(cache, index, tag)) {
         store_hits++;
         if (wBackThru) {
             //write straight to memory and cache
@@ -232,30 +248,17 @@ int main (int argc, char *argv[])  {
 
         uint32_t intAddress = stoul(address.substr(2),nullptr,16);
         tag = intAddress >> (offset_len + index_len);
-        // if (index_len == 0) {
-        //     index = 0;
-        // } else {
-        //     index = (intAddress << tag_len) >> (tag_len + offset_len);
-        // }
         index = (intAddress >> offset_len) & ((1 << index_len) - 1);
         
         if(op == 'l') {
             loads++;
             loadBlock(cache, tag, index, wBackThru, lru_fifo, cycle_mult);
         }
-        else {
+        else if (op == 's') {
             stores++;
             storeBlock(cache, tag, index, wAlloc, wBackThru, lru_fifo, cycle_mult);
         }
 
-        // if (op == 'l') {
-        //     loadBlock(stoul(address.substr(2),nullptr, 16), cache, index_len, offset_len, wBackThru, lru_fifo);
-        //     loads++;
-        // }
-        // else if (op == 's') {
-        //     storeBlock(stoul(address.substr(2), nullptr, 16), cache, index_len, offset_len, wAlloc, wBackThru, lru_fifo);
-        //     stores++;
-        // }
     }
     std::cout << "Total loads: " << loads << "\n";
     std::cout << "Total stores: " << stores << "\n";
