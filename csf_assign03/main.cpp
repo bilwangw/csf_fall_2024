@@ -62,7 +62,7 @@ void writeToMap(Cache &cache, uint index, uint32_t tag, bool lru_fifo, bool wBac
     uint32_t oldest = 4294967295;
     int best_index = 0;
     for (size_t i = 0; i < cache.sets[index].slots.size(); i++) {
-        if (oldest >= cache.sets[index].slots[i].access_ts) {
+        if (oldest > cache.sets[index].slots[i].access_ts) {
             oldest = cache.sets[index].slots[i].access_ts;
             best_index = i;
         }
