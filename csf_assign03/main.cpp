@@ -32,14 +32,23 @@ struct Slot {
     uint32_t load_ts, access_ts;
 
     Slot() : tag(0), valid(false), dirty(false), load_ts(0), access_ts(0) {}
+    ~Slot() {
+
+    }
 };
 
 struct Set {
     std::vector<Slot> slots;
+    ~Set() {
+
+    }
 };
 
 struct Cache {
     std::vector<Set> sets;
+    ~Cache() {
+
+    }
 };
 
 //global variables
@@ -57,18 +66,31 @@ uint32_t cycle_mult;
 
 void writeToMap(Cache &cache, uint32_t index, uint32_t tag, bool lru_fifo, bool wBackThru) {
     //find oldest block in slots vector
+    //initialize oldest timestamp to max unsigned int value
     uint32_t oldest = 4294967295;
     int best_index = 0;
     for (size_t i = 0; i < cache.sets[index].slots.size(); i++) {
+        // first check if slot is invalid, if so that means it is empty and can be used immediately
         if(cache.sets[index].slots[i].valid == false) {
             best_index = i;
             break;
         }
-        if (oldest > cache.sets[index].slots[i].access_ts) {
-            oldest = cache.sets[index].slots[i].access_ts;
-            best_index = i;
+        // if slot is filled, check access or load timestamp depending on LRU or FIFO and compare with current oldest found
+        if(lru_fifo) {
+            if (oldest > cache.sets[index].slots[i].load_ts) {
+                oldest = cache.sets[index].slots[i].load_ts;
+                best_index = i;
+            }
         }
+        else {
+            if (oldest > cache.sets[index].slots[i].access_ts) {
+                oldest = cache.sets[index].slots[i].access_ts;
+                best_index = i;
+            }
+        }
+
     }
+    //increment cycles simulating memory access
     if (cache.sets[index].slots[best_index].dirty && !wBackThru) {
         cycles += cycle_mult * 100;
     }
@@ -79,7 +101,7 @@ void writeToMap(Cache &cache, uint32_t index, uint32_t tag, bool lru_fifo, bool 
     cache.sets[index].slots[best_index].access_ts = currentTime++;
     cache.sets[index].slots[best_index].load_ts = currentTime++;
 }
-// update the timestamps
+// update access time stamp
 void mapUpdateTs(Cache &cache, uint32_t index, uint32_t tag) {
     for(size_t i = 0; i < cache.sets[index].slots.size(); i++) {
         if(cache.sets[index].slots[i].tag == tag) {
@@ -87,7 +109,7 @@ void mapUpdateTs(Cache &cache, uint32_t index, uint32_t tag) {
         }
     }
 }
-// check if tag is valid
+// check if tag exists in the slots vector
 bool tagIsValid(Cache &cache, uint32_t index, uint32_t tag) {
     for(size_t i = 0; i < cache.sets[index].slots.size(); i++) {
         if(cache.sets[index].slots[i].tag == tag) {
@@ -101,19 +123,18 @@ bool tagIsValid(Cache &cache, uint32_t index, uint32_t tag) {
 
 
 void loadBlock(Cache &cache, uint32_t tag, uint32_t index, bool wBackThru, bool lru_fifo, uint32_t cycle_mult) {
-
+    // check if tag currently has a slot
     if(tagIsValid(cache, index, tag)) {
         load_hits++;
-        // update access ts
         mapUpdateTs(cache, index, tag);
-        cycles++;
+        cycles++; // simulate cache access cycle
     }
     else {
         load_misses++;
         //update by writing new data into cache
         writeToMap(cache, index, tag, lru_fifo, wBackThru);
-        cycles += 100 * cycle_mult;
-        cycles++;
+        cycles += 100 * cycle_mult; // simulate memory access cycles
+        cycles++; 
     }
 
 }
@@ -124,29 +145,34 @@ void storeBlock(Cache &cache, uint32_t tag, uint32_t index, bool wAlloc, bool wB
         if (wBackThru) {
             //write straight to memory and cache
             mapUpdateTs(cache, index, tag);
-            cycles++;
-            cycles+= 100;
+            cycles++; 
+            cycles += 100; 
         } else {
             //write only to cache and mark as dirty
             mapUpdateTs(cache, index, tag);
-            cycles++;
+            cycles++; 
         }
     }
     else {
         store_misses++;
+        // check if write-allocate
         if (wAlloc) {
+            // check if write-through
             if (wBackThru) {
                 cycles++;
                 cycles += cycle_mult * 100;
                 //access memory and write into slot + memory directly
                 writeToMap(cache, index, tag, lru_fifo, wBackThru);
+            // if write-back
             } else {
                 //access memory and overwrite current data in cache to be dirty, do not store in memory only in cache
                 writeToMap(cache, index, tag, lru_fifo, wBackThru);
                 cycles += cycle_mult * 100;
                 cycles++;
             }
+        // if no-write-allocate
         } else {
+            // only need to check if write-through (no-write-allocate + write-through option not possible)
             if (wBackThru) {
                 //write directly to memory no involvement of cache
                 cycles += 100;
@@ -155,12 +181,12 @@ void storeBlock(Cache &cache, uint32_t tag, uint32_t index, bool wAlloc, bool wB
     }
 }
 
-//block offset is memory address mod 2n (offset based on size of blocks in the memory (length of an element stored))
 int main (int argc, char *argv[])  {
+    // store options to strings
     std::string arg4(argv[4]);
     std::string arg5(argv[5]);
     std::string arg6(argv[6]);
-    //error checking for malicious inputs
+    //error checking for incorrect inputs
     if (ceil(log2(std::atoi(argv[1]))) != floor(log2(std::atoi(argv[1])))) {// check if num sets is power of 2
         std::cerr << "Number of sets is not a power of 2\n";
         return 1;
@@ -220,7 +246,6 @@ int main (int argc, char *argv[])  {
     uint32_t num_blocks = std::atoi(argv[2]);
     uint32_t block_size = std::atoi(argv[3]);
     uint offset_len = log2(block_size);
-    uint tag_len = 32 - offset_len - index_len; // compute tag length by subtracting offset and index length from the length of the memory address
     std::vector<Set> sets(num_sets);
 
     for(std::vector<Set>::iterator it = sets.begin(); it != sets.end(); it++ )    {
