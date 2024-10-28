@@ -1,3 +1,4 @@
+
 #include <math.h>
 #include <iostream>
 #include <stdio.h>
@@ -70,7 +71,7 @@ void writeToMap(Cache &cache, uint32_t index, uint32_t tag, bool lru_fifo, bool 
     uint32_t oldest = 4294967295;
     int best_index = 0;
     for (size_t i = 0; i < cache.sets[index].slots.size(); i++) {
-        // first check if slot is invalid, if so that means it is empty and can be used immediately
+    // first check if slot is invalid, if so that means it is empty and can be used immediately
         if(cache.sets[index].slots[i].valid == false) {
             best_index = i;
             break;
@@ -88,12 +89,13 @@ void writeToMap(Cache &cache, uint32_t index, uint32_t tag, bool lru_fifo, bool 
                 best_index = i;
             }
         }
-
     }
+    
     //increment cycles simulating memory access
     if (cache.sets[index].slots[best_index].dirty && !wBackThru) {
         cycles += cycle_mult * 100;
     }
+    //currentTime++;
     //overwrite existing or blank slot
     cache.sets[index].slots[best_index].tag = tag;
     cache.sets[index].slots[best_index].valid = true;
@@ -106,6 +108,7 @@ void mapUpdateTs(Cache &cache, uint32_t index, uint32_t tag) {
     for(size_t i = 0; i < cache.sets[index].slots.size(); i++) {
         if(cache.sets[index].slots[i].tag == tag) {
             cache.sets[index].slots[i].access_ts = currentTime++;
+            return;
         }
     }
 }
@@ -201,6 +204,7 @@ int main (int argc, char *argv[])  {
     }
     else if (std::atoi(argv[3]) < 4) {  // check if block size is at least 4
         std::cerr << "Block size is not greater than or equal to 4\n";
+        return 1;
     }
     else if (arg5 == "write-back" && arg4 == "no-write-allocate") {
             std::cerr << "write-back and no-write-allocate cannot be used at the same time\n";
