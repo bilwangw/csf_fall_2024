@@ -1,4 +1,34 @@
+/* Cache Simulator
+CSF Assignment 3
+Ryan Wu - rwu42@jh.edu
+Bill Wang - bwang89@jh.edu
 
+Cache simulator written using C++
+
+Inputs:
+number of sets in the cache (a positive power-of-2)
+number of blocks in each set (a positive power-of-2)
+number of bytes in each block (a positive power-of-2, at least 4)
+write-allocate or no-write-allocate
+write-through or write-back
+lru (least-recently-used) or fifo evictions
+
+Outputs:
+Total loads: count
+Total stores: count
+Load hits: count
+Load misses: count
+Store hits: count
+Store misses: count
+Total cycles: count
+*/
+
+/* invalid input
+block size is not a power of 2
+number of sets is not a power of 2
+block size is less than 4
+write-back and no-write-allocate were both specified
+*/
 #include <math.h>
 #include <iostream>
 #include <stdio.h>
@@ -9,29 +39,12 @@
 #include <unordered_map>
 #include <tuple>
 #include <bitset>
-// ./csim 256 4 16 write-allocate write-back fifo < traces/hits.trace
-//256 sets, 4 blocks, 16 bits in each block (offset size)
 
-/* inputs
-number of sets in the cache (a positive power-of-2)
-number of blocks in each set (a positive power-of-2)
-number of bytes in each block (a positive power-of-2, at least 4)
-write-allocate or no-write-allocate
-write-through or write-back
-lru (least-recently-used) or fifo evictions
-*/
-
-/* invalid input
-block size is not a power of 2
-number of sets is not a power of 2
-block size is less than 4
-write-back and no-write-allocate were both specified
-*/
+//definition of structs to model the cache 
 struct Slot {
     uint32_t tag;
     bool valid, dirty;
     uint32_t load_ts, access_ts;
-
     Slot() : tag(0), valid(false), dirty(false), load_ts(0), access_ts(0) {}
     ~Slot() {
 
@@ -67,8 +80,7 @@ uint32_t cycle_mult;
 
 void writeToMap(Cache &cache, uint32_t index, uint32_t tag, bool lru_fifo, bool wBackThru) {
     //find oldest block in slots vector
-    //initialize oldest timestamp to max unsigned int value
-    uint32_t oldest = 4294967295;
+    uint32_t oldest = 4294967295; //initialize oldest timestamp to max unsigned int value
     int best_index = 0;
     for (size_t i = 0; i < cache.sets[index].slots.size(); i++) {
     // first check if slot is invalid, if so that means it is empty and can be used immediately
@@ -95,7 +107,6 @@ void writeToMap(Cache &cache, uint32_t index, uint32_t tag, bool lru_fifo, bool 
     if (cache.sets[index].slots[best_index].dirty && !wBackThru) {
         cycles += cycle_mult * 100;
     }
-    //currentTime++;
     //overwrite existing or blank slot
     cache.sets[index].slots[best_index].tag = tag;
     cache.sets[index].slots[best_index].valid = true;
@@ -124,7 +135,7 @@ bool tagIsValid(Cache &cache, uint32_t index, uint32_t tag) {
     return false;
 }
 
-
+// simulate loading a block
 void loadBlock(Cache &cache, uint32_t tag, uint32_t index, bool wBackThru, bool lru_fifo, uint32_t cycle_mult) {
     // check if tag currently has a slot
     if(tagIsValid(cache, index, tag)) {
@@ -142,6 +153,7 @@ void loadBlock(Cache &cache, uint32_t tag, uint32_t index, bool wBackThru, bool 
 
 }
 
+// simulator storing a block 
 void storeBlock(Cache &cache, uint32_t tag, uint32_t index, bool wAlloc, bool wBackThru, bool lru_fifo, uint32_t cycle_mult) {
     if(tagIsValid(cache, index, tag)) {
         store_hits++;
@@ -214,7 +226,7 @@ int main (int argc, char *argv[])  {
     bool wBackThru; // false is write-back, true is write-through
     bool lru_fifo; // false is lru, true is fifo
 
-    // store cache configuration options to booleans
+    // store cache configuration options to booleans, parsing input
     if (arg4 == "write-allocate") {
         wAlloc = 1;
     }
@@ -245,6 +257,7 @@ int main (int argc, char *argv[])  {
         std::cerr << "Invalid argument, must be lru or fifo\n";
         return 1;
     }
+
     uint32_t num_sets = std::atoi(argv[1]);
     uint index_len = log2(num_sets); // get the bit length of sets
     uint32_t num_blocks = std::atoi(argv[2]);
@@ -252,11 +265,13 @@ int main (int argc, char *argv[])  {
     uint offset_len = log2(block_size);
     std::vector<Set> sets(num_sets);
 
+    //initialize all slots
     for(std::vector<Set>::iterator it = sets.begin(); it != sets.end(); it++ )    {
         std::vector<Slot> slots(num_blocks);
         it->slots = slots;
     }
 
+    //define the Cache struct to be used
     Cache cache;
     cache.sets = sets;
 
@@ -298,7 +313,6 @@ int main (int argc, char *argv[])  {
     std::cout << "Store hits: " << store_hits << "\n";
     std::cout << "Store misses: " << store_misses << "\n";
     std::cout << "Total cycles: " << cycles << "\n";
-
     return 0;
 }
 
