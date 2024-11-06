@@ -26,6 +26,14 @@ int main( int argc, char **argv ) {
 
   // open the named file
   // TODO: open the named file
+  char *filename = argv[1];
+  fd = open(filename, O_RDWR);
+  if (fd < 0) {
+    // file couldn't be opened: handle error and exit
+    fprintf( stderr, "Invalid file\n");
+    exit (1);
+  }
+
 
   // determine file size and number of elements
   unsigned long file_size, num_elements;
