@@ -7,7 +7,17 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
+#include <stdbool.h>
 
+
+struct Child {
+    bool success;
+    pid_t pid;
+    int state;
+};
+
+void quicksort_wait(struct Child* child);
+struct Child quicksort_subproc(int64_t* arr, unsigned long start, unsigned long end, unsigned long par_threshold); 
 int compare( const void *left, const void *right );
 void swap( int64_t *arr, unsigned long i, unsigned long j );
 unsigned long partition( int64_t *arr, unsigned long start, unsigned long end );
@@ -34,14 +44,33 @@ int main( int argc, char **argv ) {
     exit (1);
   }
 
-
   // determine file size and number of elements
   unsigned long file_size, num_elements;
   // TODO: determine the file size and number of elements
 
   // mmap the file data
   int64_t *arr;
+
   // TODO: mmap the file data
+  struct stat statbuf;
+  int rc = fstat( fd, &statbuf );
+  if ( rc != 0 ) {
+      // handle fstat error and exit
+      fprintf( stderr, "fstat error\n");
+      exit(1);
+  }
+// statbuf.st_size indicates the number of bytes in the file
+  arr = mmap( NULL, statbuf.st_size, PROT_READ | PROT_WRITE,
+            MAP_SHARED, fd, 0 );
+  close( fd ); // file can be closed now
+
+  num_elements = statbuf.st_size/8;
+  if ( arr == MAP_FAILED ) {
+    // handle mmap error and exit
+    fprintf( stderr, "mmap error\n");
+    exit(1);
+  }
+
 
   // Sort the data!
   int success;
@@ -50,10 +79,9 @@ int main( int argc, char **argv ) {
     fprintf( stderr, "Error: sorting failed\n" );
     exit( 1 );
   }
-
   // Unmap the file data
   // TODO: unmap the file data
-
+  munmap(arr, statbuf.st_size);
   return 0;
 }
 
@@ -186,10 +214,63 @@ int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned lo
   // Recursively sort the left and right partitions
   int left_success, right_success;
   // TODO: modify this code so that the recursive calls execute in child processes
-  left_success = quicksort( arr, start, mid, par_threshold );
-  right_success = quicksort( arr, mid + 1, end, par_threshold );
+  struct Child left = quicksort_subproc(arr, start, mid, par_threshold);
+  struct Child right = quicksort_subproc(arr, mid+1, end, par_threshold);
+  // left_success = quicksort( arr, start, mid, par_threshold );
+  // right_success = quicksort( arr, mid + 1, end, par_threshold );
+  quicksort_wait( &left );
+  quicksort_wait( &right );
 
   return left_success && right_success;
 }
 
 // TODO: define additional helper functions if needed
+struct Child quicksort_subproc(int64_t* arr, unsigned long start, unsigned long end, unsigned long par_threshold) {
+  // Recursively sort the left and right partitions
+
+  pid_t child_pid = fork();
+  if ( child_pid == 0 ) {
+    // executing in the child
+    int left_success = quicksort( arr, start, end, par_threshold );
+    if (left_success)
+      exit( 0 );
+    else
+      exit( 1 );
+  } else if ( child_pid < 0 ) {
+    // fork failed
+    // ...handle error...
+    fprintf( stderr, "Error: fork failed\n" );
+    exit( 1 );
+  } else {
+    // in parent
+    
+  }
+}
+
+void quicksort_wait(struct Child* child) {
+  int rc, wstatus;
+  wstatus = child->state;
+  rc = waitpid( child->pid, &wstatus, 0 );
+  if ( rc < 0 ) {
+    // waitpid failed
+    // ...handle error...
+    fprintf( stderr, "Error: waidpid failed\n" );
+    exit( 1 );
+  } else {
+    // check status of child
+    if ( !WIFEXITED( wstatus ) ) {
+      // child did not exit normally (e.g., it was terminated by a signal)
+      // ...handle child failure...
+      fprintf( stderr, "Error: child failed\n" );
+      exit( 1 );
+    } else if ( WEXITSTATUS( wstatus ) != 0 ) {
+      // child exited with a non-zero exit code
+      // ...handle child failure...
+      fprintf( stderr, "Error: child exited with non-zero exit code\n" );
+      exit( 1 );
+    } else {
+      // child exited with exit code zero (it was successful)
+      return;
+    }
+  }
+}
