@@ -224,23 +224,27 @@ int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned lo
 
   left_success = left.success;
   right_success = right.success;
-
+  //return true;
   return left_success && right_success;
 }
 
 // TODO: define additional helper functions if needed
 struct Child quicksort_subproc(int64_t* arr, unsigned long start, unsigned long end, unsigned long par_threshold) {
   // Recursively sort the left and right partitions
-
+  struct Child current;
   pid_t child_pid = fork();
+  current.pid = child_pid;
   if ( child_pid == 0 ) {
     // executing in the child
     int left_success = quicksort( arr, start, end, par_threshold );
     if (left_success) {
       exit( 0 );
+      current.success = true;
     }
-    else
+    else {
       exit( 1 );
+      current.success = false;
+    }
   } 
   else if ( child_pid < 0 ) {
     // fork failed
@@ -250,11 +254,12 @@ struct Child quicksort_subproc(int64_t* arr, unsigned long start, unsigned long 
     exit( 1 );
   } else {
     // in parent
-    int right_success = quicksort( arr, start, end, par_threshold );
-    if (right_success) {
+    //int right_success = quicksort( arr, start, end, par_threshold );
+    //if (right_success) {
       exit ( 0 );
-    }
+    //}
   }
+  return current;
 }
 
 void quicksort_wait(struct Child* child) {
