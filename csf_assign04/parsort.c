@@ -229,7 +229,7 @@ struct Child quicksort_subproc(int64_t* arr, unsigned long start, unsigned long 
   // Recursively sort the left and right partitions
 
   pid_t child_pid = fork();
-  if ( child_pid == 0 ) {
+  if ( child_pid >= 0 ) {
     // executing in the child
     int left_success = quicksort( arr, start, end, par_threshold );
     if (left_success)
