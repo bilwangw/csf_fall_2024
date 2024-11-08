@@ -218,11 +218,12 @@ int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned lo
   struct Child right = quicksort_subproc(arr, mid+1, end, par_threshold);
   // left_success = quicksort( arr, start, mid, par_threshold );
   // right_success = quicksort( arr, mid + 1, end, par_threshold );
-  left_success = left.success;
-  right_success = right.success;
 
   quicksort_wait( &left );
   quicksort_wait( &right );
+
+  left_success = left.success;
+  right_success = right.success;
 
   return left_success && right_success;
 }
@@ -232,21 +233,27 @@ struct Child quicksort_subproc(int64_t* arr, unsigned long start, unsigned long 
   // Recursively sort the left and right partitions
 
   pid_t child_pid = fork();
-  if ( child_pid >= 0 ) {
+  if ( child_pid == 0 ) {
     // executing in the child
     int left_success = quicksort( arr, start, end, par_threshold );
-    if (left_success)
+    if (left_success) {
       exit( 0 );
+    }
     else
       exit( 1 );
-  } else if ( child_pid < 0 ) {
+  } 
+  else if ( child_pid < 0 ) {
     // fork failed
     // ...handle error...
     fprintf( stderr, "Error: fork failed\n" );
+    
     exit( 1 );
   } else {
     // in parent
-    
+    int right_success = quicksort( arr, start, end, par_threshold );
+    if (right_success) {
+      exit ( 0 );
+    }
   }
 }
 
@@ -258,6 +265,7 @@ void quicksort_wait(struct Child* child) {
     // waitpid failed
     // ...handle error...
     fprintf( stderr, "Error: waidpid failed\n" );
+    child->success = false;
     exit( 1 );
   } else {
     // check status of child
@@ -265,14 +273,17 @@ void quicksort_wait(struct Child* child) {
       // child did not exit normally (e.g., it was terminated by a signal)
       // ...handle child failure...
       fprintf( stderr, "Error: child failed\n" );
+      child->success = false;
       exit( 1 );
     } else if ( WEXITSTATUS( wstatus ) != 0 ) {
       // child exited with a non-zero exit code
       // ...handle child failure...
       fprintf( stderr, "Error: child exited with non-zero exit code\n" );
+      child->success = false;
       exit( 1 );
     } else {
       // child exited with exit code zero (it was successful)
+      child->success = true;
       return;
     }
   }
