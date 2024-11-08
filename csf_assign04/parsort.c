@@ -218,6 +218,9 @@ int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned lo
   struct Child right = quicksort_subproc(arr, mid+1, end, par_threshold);
   // left_success = quicksort( arr, start, mid, par_threshold );
   // right_success = quicksort( arr, mid + 1, end, par_threshold );
+  left_success = left.success;
+  right_success = right.success;
+
   quicksort_wait( &left );
   quicksort_wait( &right );
 
