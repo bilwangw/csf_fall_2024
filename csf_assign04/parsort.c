@@ -24,8 +24,6 @@ void swap( int64_t *arr, unsigned long i, unsigned long j );
 unsigned long partition( int64_t *arr, unsigned long start, unsigned long end );
 int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned long par_threshold );
 
-// TODO: declare additional helper functions if needed
-
 int main( int argc, char **argv ) {
   unsigned long par_threshold;
   if ( argc != 3 || sscanf( argv[2], "%lu", &par_threshold ) != 1 ) {
@@ -36,7 +34,6 @@ int main( int argc, char **argv ) {
   int fd;
 
   // open the named file
-  // TODO: open the named file
   char *filename = argv[1];
   fd = open(filename, O_RDWR);
   if (fd < 0) {
@@ -47,12 +44,10 @@ int main( int argc, char **argv ) {
 
   // determine file size and number of elements
   unsigned long file_size, num_elements;
-  // TODO: determine the file size and number of elements
 
   // mmap the file data
   int64_t *arr;
 
-  // TODO: mmap the file data
   struct stat statbuf;
   int rc = fstat( fd, &statbuf );
   if ( rc != 0 ) {
@@ -268,67 +263,3 @@ int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned lo
 
   return left_success && right_success; // return true if left and right both succeed, just in case
 }
-
-/*
-struct Child quicksort_subproc(int64_t* arr, unsigned long start, unsigned long end, unsigned long par_threshold) {
-  // Recursively sort the left and right partitions
-  struct Child current;
-  pid_t child_pid = fork();
-  current.pid = child_pid;
-  if ( child_pid == 0 ) {
-    // executing in the child
-    int success = quicksort( arr, start, end, par_threshold );
-    if (success) {
-      current.success = true;
-      exit( 0 );
-    }
-    else {
-      current.success = false;
-      exit( 1 );
-    }
-  } 
-  else if ( child_pid < 0 ) {
-    // fork failed
-    // ...handle error...
-    fprintf( stderr, "Error: fork failed\n" );
-    
-    exit( 1 );
-  } else {
-    // in parent
-      exit ( 0 );
-  }
-  return current;
-}
-
-void quicksort_wait(struct Child* child) {
-  int rc, wstatus;
-  wstatus = child->state;
-  rc = waitpid( child->pid, &wstatus, 0 );
-  if ( rc < 0 ) {
-    // waitpid failed
-    // ...handle error...
-    fprintf( stderr, "Error: waidpid failed\n" );
-    child->success = false;
-    exit( 1 );
-  } else {
-    // check status of child
-    if ( !WIFEXITED( wstatus ) ) {
-      // child did not exit normally (e.g., it was terminated by a signal)
-      // ...handle child failure...
-      fprintf( stderr, "Error: child failed\n" );
-      child->success = false;
-      exit( 1 );
-    } else if ( WEXITSTATUS( wstatus ) != 0 ) {
-      // child exited with a non-zero exit code
-      // ...handle child failure...
-      fprintf( stderr, "Error: child exited with non-zero exit code\n" );
-      child->success = false;
-      exit( 1 );
-    } else {
-      // child exited with exit code zero (it was successful)
-      child->success = true;
-      return;
-    }
-  }
-}
-*/
