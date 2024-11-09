@@ -8,6 +8,7 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 
 struct Child {
@@ -213,22 +214,62 @@ int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned lo
 
   // Recursively sort the left and right partitions
   int left_success, right_success;
-  // TODO: modify this code so that the recursive calls execute in child processes
-  struct Child left = quicksort_subproc(arr, start, mid, par_threshold);
-  struct Child right = quicksort_subproc(arr, mid+1, end, par_threshold);
-  // left_success = quicksort( arr, start, mid, par_threshold );
-  // right_success = quicksort( arr, mid + 1, end, par_threshold );
 
-  quicksort_wait( &left );
-  quicksort_wait( &right );
+  // Create a fork, where parent process is right half of partition and child is left half
+  pid_t left = fork(); // create fork
+  if (left == 0) {// child process
+     if(quicksort( arr, start, mid, par_threshold )) { // check if quicksort successful
+      left_success = true;
+      exit(0); // exit code 0 for success
+     }
+     else { // return error code if quicksort fails
+      fprintf( stderr, "Error: child failed\n" );
+      left_success = false;
+      exit(1); // exit with code 1 for failure
+     }
+  }
+  else if (left < 0) { // if pid_t is invalid, fail and exit code 1
+    fprintf( stderr, "Error: fork failed\n" );
+    left_success = false;
+    exit(1);
+  }
+  else { // parent process
+    if(quicksort( arr, mid + 1, end, par_threshold )) { // sort right half
+      right_success = true;
+    }
+    else { // if parent process fails, throw error return false
+      fprintf( stderr, "Error: parent failed\n" );
+      right_success = false;
+      return false;
+    }
+    // wait pid section will run in parent process
+    int rc, wstatus;
+    rc = waitpid( left, &wstatus, 0 );
+    if ( rc < 0 ) {
+      // waitpid failed
+      fprintf( stderr, "Error: waidpid failed\n" );
+      return 0;
+    } else {
+      // check status of child
+      if ( !WIFEXITED( wstatus ) ) {
+        // child did not exit normally (e.g., it was terminated by a signal)
+        fprintf( stderr, "Error: child did not exit normally\n" );
+        return 0;
+      } else if ( WEXITSTATUS( wstatus ) != 0 ) {
+        // child exited with a non-zero exit code
+        fprintf( stderr, "Error: child exited with non-zero exit code\n" );
+        return 0;
+      } else {
+        // child exited with exit code zero (it was successful), so return true
+        return 1;
+      }
+    }
+  }
 
-  left_success = left.success;
-  right_success = right.success;
-  //return true;
-  return left_success && right_success;
+  return left_success && right_success; // return true if left and right both succeed, just in case
 }
 
-// TODO: define additional helper functions if needed
+/*
 struct Child quicksort_subproc(int64_t* arr, unsigned long start, unsigned long end, unsigned long par_threshold) {
   // Recursively sort the left and right partitions
   struct Child current;
@@ -236,14 +277,14 @@ struct Child quicksort_subproc(int64_t* arr, unsigned long start, unsigned long 
   current.pid = child_pid;
   if ( child_pid == 0 ) {
     // executing in the child
-    int left_success = quicksort( arr, start, end, par_threshold );
-    if (left_success) {
-      exit( 0 );
+    int success = quicksort( arr, start, end, par_threshold );
+    if (success) {
       current.success = true;
+      exit( 0 );
     }
     else {
-      exit( 1 );
       current.success = false;
+      exit( 1 );
     }
   } 
   else if ( child_pid < 0 ) {
@@ -254,10 +295,7 @@ struct Child quicksort_subproc(int64_t* arr, unsigned long start, unsigned long 
     exit( 1 );
   } else {
     // in parent
-    //int right_success = quicksort( arr, start, end, par_threshold );
-    //if (right_success) {
       exit ( 0 );
-    //}
   }
   return current;
 }
@@ -293,3 +331,4 @@ void quicksort_wait(struct Child* child) {
     }
   }
 }
+*/
