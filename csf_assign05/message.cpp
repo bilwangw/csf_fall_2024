@@ -31,6 +31,17 @@ Message::~Message()
 Message &Message::operator=( const Message &rhs )
 {
   // TODO: implement
+  this->m_message_type = rhs.m_message_type;
+  std::vector<std::string> temp;
+  if (rhs.m_args.empty()) {
+
+  } else {
+    for (size_t i = 0; i < rhs.m_args.size(); i++) {
+      temp.push_back(rhs.m_args[i]);
+    }
+  }
+  
+  this->m_args = temp;
   return *this;
 }
 

@@ -351,6 +351,8 @@ void test_message_serialization_decode( TestObjs *objs )
 
   MessageSerialization::decode( objs->encoded_create_req, msg );
   ASSERT( MessageType::CREATE == msg.get_message_type() );
+  std::cout << msg.get_num_args() << "\n";
+  std::cout << msg.get_arg(0) << " " << msg.get_arg(1) << "\n";
   ASSERT( 1 == msg.get_num_args() );
   ASSERT( "invoices" == msg.get_table() );
 

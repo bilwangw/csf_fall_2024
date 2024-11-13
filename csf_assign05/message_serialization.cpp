@@ -84,13 +84,89 @@ void MessageSerialization::encode( const Message &msg, std::string &encoded_msg 
 void MessageSerialization::decode( const std::string &encoded_msg, Message &msg )
 {
   if (!msg.is_valid()) {
-    throw std::invalid_argument("Invalid message: The message is invalid");
+    throw InvalidMessage("Invalid message: The message is invalid");
   }
   if (encoded_msg.length() > Message::MAX_ENCODED_LEN) {
-    throw std::invalid_argument("Invalid message: Message exceeds maximum limit");
+    throw InvalidMessage("Invalid message: Message exceeds maximum limit");
   }
   if (encoded_msg.back() != '\n') {
-    throw std::invalid_argument("Invalid message: The message does not end in a newline character");
+    throw InvalidMessage("Invalid message: The message does not end in a newline character");
   }
   // TODO: implement
+  // int end = encoded_msg.find(" ");
+  // std::string message_type = encoded_msg.substr(0, end);
+  const Message new_msg;
+  msg = new_msg;
+
+  std::string word;
+  std::string message_type;
+  std::istringstream iss(encoded_msg);
+  iss >> message_type;
+  iss >> word;
+  if (message_type == "LOGIN") {
+    msg.set_message_type(MessageType::LOGIN);
+    msg.push_arg(word);
+  }
+  else if (message_type == "CREATE") {
+    msg.set_message_type(MessageType::CREATE);
+    msg.push_arg(word);
+  }
+  else if (message_type == "PUSH") {
+    msg.set_message_type(MessageType::PUSH);
+    msg.push_arg(word);
+  }
+  else if (message_type == "POP") {
+    msg.set_message_type(MessageType::POP);
+  }
+  else if (message_type == "TOP") {
+    msg.set_message_type(MessageType::TOP);
+  }
+  else if (message_type == "SET") {
+    msg.set_message_type(MessageType::SET);
+    msg.push_arg(word);
+    iss >> word;
+    msg.push_arg(word);
+  }
+  else if (message_type == "GET") {
+    msg.set_message_type(MessageType::GET);
+    msg.push_arg(word);
+    iss >> word;
+    msg.push_arg(word);
+  }
+  else if (message_type == "ADD") {
+    msg.set_message_type(MessageType::ADD);
+  }
+  else if (message_type == "MUL") {
+    msg.set_message_type(MessageType::MUL);
+  }
+  else if (message_type == "SUB") {
+    msg.set_message_type(MessageType::SUB);
+  }
+  else if (message_type == "DIV") {
+    msg.set_message_type(MessageType::DIV);
+  }
+  else if (message_type == "BEGIN") {
+    msg.set_message_type(MessageType::BEGIN);
+  }
+  else if (message_type == "COMMIT") {
+    msg.set_message_type(MessageType::COMMIT);
+  }
+  else if (message_type == "BYE") {
+    msg.set_message_type(MessageType::BYE);
+  }
+  else if (message_type == "OK") {
+    msg.set_message_type(MessageType::OK);
+  }
+  else if (message_type == "FAILED") {
+    msg.set_message_type(MessageType::FAILED);
+  }
+  else if (message_type == "ERROR") {
+    msg.set_message_type(MessageType::ERROR);
+  }
+  else if (message_type == "DATA") {
+    msg.set_message_type(MessageType::DATA);
+  }
+  else {
+    throw InvalidMessage("u fuckde up ");
+  }
 }
