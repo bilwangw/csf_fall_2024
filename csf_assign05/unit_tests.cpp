@@ -6,6 +6,7 @@
 #include "value_stack.h"
 #include "exceptions.h"
 #include "tctest.h"
+#include <iostream>
 
 struct TestObjs
 {
@@ -306,7 +307,7 @@ void test_message_serialization_encode( TestObjs *objs )
 
   MessageSerialization::encode( objs->create_req, s );
   ASSERT( "CREATE accounts\n" == s );
-
+  
   MessageSerialization::encode( objs->push_req, s );
   ASSERT( "PUSH 47374\n" == s );
 
