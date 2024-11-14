@@ -33,16 +33,19 @@ bool Table::trylock()
 void Table::set( const std::string &key, const std::string &value )
 {
   // TODO: implement
+  table[key] = value;
 }
 
 std::string Table::get( const std::string &key )
 {
   // TODO: implement
+  return table[key];
 }
 
 bool Table::has_key( const std::string &key )
 {
   // TODO: implement
+  return table.count(key);
 }
 
 void Table::commit_changes()
