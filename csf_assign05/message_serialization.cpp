@@ -159,12 +159,17 @@ void MessageSerialization::decode( const std::string &encoded_msg, Message &msg 
   }
   else if (message_type == "FAILED") {
     msg.set_message_type(MessageType::FAILED);
+    word = encoded_msg.substr(8,encoded_msg.length()-10);
+    msg.push_arg(word);
   }
   else if (message_type == "ERROR") {
     msg.set_message_type(MessageType::ERROR);
+    word = encoded_msg.substr(8,encoded_msg.length()-10);
+    msg.push_arg(word);
   }
   else if (message_type == "DATA") {
     msg.set_message_type(MessageType::DATA);
+    msg.push_arg(word);
   }
   else {
     throw InvalidMessage("u fuckde up ");
