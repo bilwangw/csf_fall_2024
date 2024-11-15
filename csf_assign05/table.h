@@ -11,6 +11,7 @@ private:
   std::string m_name;
   // TODO: add member variables
   std::map<std::string, std::string> table;
+  pthread_mutex_t mutex;
 
   // copy constructor and assignment operator are prohibited
   Table( const Table & );

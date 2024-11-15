@@ -18,16 +18,19 @@ Table::~Table()
 void Table::lock()
 {
   // TODO: implement
+  pthread_mutex_lock(&mutex);
 }
 
 void Table::unlock()
 {
   // TODO: implement
+  pthread_mutex_unlock(&mutex);
 }
 
 bool Table::trylock()
 {
   // TODO: implement
+  return (1 + pthread_mutex_trylock(&mutex)); //trylock returns -1 if fails, returns 0 if true, add one to correct behavior
 }
 
 void Table::set( const std::string &key, const std::string &value )
