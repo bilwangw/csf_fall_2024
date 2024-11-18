@@ -432,6 +432,8 @@ void test_table_get( TestObjs *objs )
     TableGuard g( objs->invoices ); // ensure table is locked and unlocked
 
     // Changes should be visible even though we haven't committed them
+    std::cout << objs->invoices->get("abc123");
+    std::cout << objs->invoices->get("xyz456");
     ASSERT( "1000" == objs->invoices->get( "abc123" ) );
     ASSERT( "1318" == objs->invoices->get( "xyz456" ) );
 
@@ -563,7 +565,6 @@ void test_table_commit_and_rollback( TestObjs *objs )
   // but pending change shouldn't be there
   {
     TableGuard g( objs->line_items );
-
     ASSERT( "100" == objs->line_items->get( "apples" ) );
     ASSERT( "150" == objs->line_items->get( "bananas" ) );
     ASSERT( !objs->line_items->has_key( "oranges" ) );
