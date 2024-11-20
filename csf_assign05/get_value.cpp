@@ -24,29 +24,32 @@ int main(int argc, char **argv)
   ssize_t n;
 
   std::string login = "LOGIN " + username + "\n";
-  rio_writen(fd, login.c_str(), login.length());
-  n = rio_readnb(&rio, buf, sizeof(buf));
-  if (n > 0) {
-    std::cout << buf;
-  }
+  rio_writen(fd, login.data(), login.length());
+
+  n = rio_readlineb(&rio, buf, sizeof(buf));
+  // if (n > 0) {
+  //   std::cout << buf;
+  // }
 
   std::string get = "GET " + table + " " + key + "\n";
-  rio_writen(fd, get.c_str(), get.length());
-  n = rio_readnb(&rio, buf, sizeof(buf));
-  if (n > 0) {
-    std::cout << buf;
-  }
+  rio_writen(fd, get.data(), get.length());
+
+  n = rio_readlineb(&rio, buf, sizeof(buf));
+  // if (n > 0) {
+  //   std::cout << buf;
+  // }
 
   std::string top = "TOP\n";
-  rio_writen(fd, top.c_str(), top.length());
+  const char* topc = "TOP\n";
+  rio_writen(fd, top.data(), top.length());
 
-  n = rio_readnb(&rio, buf, sizeof(buf));
+  n = rio_readlineb(&rio, buf, sizeof(buf));
   if (n > 0) {
     std::cout << buf;
   }
   
   std::string bye = "BYE\n";
-  rio_writen(fd, bye.c_str(), bye.length());
+  rio_writen(fd, bye.data(), bye.length());
   // const char* message = (login + get + top + bye).c_str();
   // rio_writen(fd, message, strlen(message));
   close(fd);
