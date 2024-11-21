@@ -29,10 +29,16 @@ int main(int argc, char **argv)
   n = rio_readlineb(&rio, buf, sizeof(buf));
   output = buf;
   if(n <= 0) {
-    std::cerr << "ERROR: get failed\n";
+    std::cerr << "Error: login failed\n";
+    return 1;
   }
   if(output.find("ERROR") != std::string::npos) { //error handling
-    std::cerr << "ERROR: login failed\n";
+    std::cerr << "Error: " << output.substr(6,std::string::npos);
+    return 1;
+  }
+  else if(output.find("FAILED") != std::string::npos) { //error handling
+    std::cerr << "Error: " << output.substr(7,std::string::npos);
+    return 1;
   }
 
 
@@ -41,10 +47,16 @@ int main(int argc, char **argv)
   n = rio_readlineb(&rio, buf, sizeof(buf));
   output = buf;
   if(n <= 0) {
-    std::cerr << "ERROR: get failed\n";
+    std::cerr << "Error: get failed\n";
+    return 1;
   }
   else if(output.find("ERROR") != std::string::npos) { //error handling
-    std::cerr << "ERROR: get failed\n";
+    std::cerr << "Error: " << output.substr(6,std::string::npos);
+    return 1;
+  }
+  else if(output.find("FAILED") != std::string::npos) { //error handling
+    std::cerr << "Error: " << output.substr(7,std::string::npos);
+    return 1;
   }
 
 
@@ -53,10 +65,16 @@ int main(int argc, char **argv)
   n = rio_readlineb(&rio, buf, sizeof(buf));
   std::string data = buf;
   if(n <= 0) {
-    std::cerr << "ERROR: top failed\n";
+    std::cerr << "Error: top failed\n";
+    return 1;
   }
   else if(data.find("ERROR") != std::string::npos) { //error handling
-    std::cerr << "ERROR: top failed\n";
+    std::cerr << "Error: " << data.substr(6,std::string::npos);
+    return 1;
+  }
+  else if(output.find("FAILED") != std::string::npos) { //error handling
+    std::cerr << "Error: " << data.substr(7,std::string::npos);
+    return 1;
   }
   else if (n > 0) {
     std::cout << data.substr(5,std::string::npos); // get only the value from the line "DATA <value>"
@@ -67,10 +85,16 @@ int main(int argc, char **argv)
   n = rio_readlineb(&rio, buf, sizeof(buf));
   output = buf;
   if(n <= 0) {
-    std::cerr << "ERROR: bye failed\n";
+    std::cerr << "Error: bye failed\n";
+    return 1;
   }
   else if(output.find("ERROR") != std::string::npos) { //error handling
-    std::cerr << "ERROR: bye failed\n";
+    std::cerr << "Error: " << output.substr(6,std::string::npos);
+    return 1;
+  }
+  else if(output.find("FAILED") != std::string::npos) { //error handling
+    std::cerr << "Error: " << output.substr(7,std::string::npos);
+    return 1;
   }
 
   close(fd);
