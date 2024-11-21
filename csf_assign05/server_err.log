@@ -1,0 +1,1 @@
+ref_server: client_connection.cpp:299: void ClientConnection::commit_transaction(): Assertion `m_in_transaction' failed.

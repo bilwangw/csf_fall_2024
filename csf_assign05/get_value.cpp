@@ -22,28 +22,56 @@ int main(int argc, char **argv)
   rio_readinitb(&rio, fd);
   char buf[1000];
   ssize_t n;
+  std::string output;
 
   std::string login = "LOGIN " + username + "\n";
   rio_writen(fd, login.data(), login.length());
   n = rio_readlineb(&rio, buf, sizeof(buf));
+  output = buf;
+  if(n <= 0) {
+    std::cerr << "ERROR: get failed\n";
+  }
+  if(output.find("ERROR") != std::string::npos) { //error handling
+    std::cerr << "ERROR: login failed\n";
+  }
 
 
   std::string get = "GET " + table + " " + key + "\n";
   rio_writen(fd, get.data(), get.length());
   n = rio_readlineb(&rio, buf, sizeof(buf));
+  output = buf;
+  if(n <= 0) {
+    std::cerr << "ERROR: get failed\n";
+  }
+  else if(output.find("ERROR") != std::string::npos) { //error handling
+    std::cerr << "ERROR: get failed\n";
+  }
+
 
   std::string top = "TOP\n";
   rio_writen(fd, top.data(), top.length());
-
   n = rio_readlineb(&rio, buf, sizeof(buf));
-  std::string data(buf);
-  if (n > 0) {
-    std::cout << data.substr(5,std::string::npos);
+  std::string data = buf;
+  if(n <= 0) {
+    std::cerr << "ERROR: top failed\n";
+  }
+  else if(data.find("ERROR") != std::string::npos) { //error handling
+    std::cerr << "ERROR: top failed\n";
+  }
+  else if (n > 0) {
+    std::cout << data.substr(5,std::string::npos); // get only the value from the line "DATA <value>"
   }
   
   std::string bye = "BYE\n";
   rio_writen(fd, bye.data(), bye.length());
   n = rio_readlineb(&rio, buf, sizeof(buf));
+  output = buf;
+  if(n <= 0) {
+    std::cerr << "ERROR: bye failed\n";
+  }
+  else if(output.find("ERROR") != std::string::npos) { //error handling
+    std::cerr << "ERROR: bye failed\n";
+  }
 
   close(fd);
   return 0;

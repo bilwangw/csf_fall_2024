@@ -34,14 +34,14 @@ int main(int argc, char **argv) {
   char buf[1000];
   ssize_t n;
 
-  
+
   std::string login = "LOGIN " + username + "\n";
   rio_writen(fd, login.c_str(), strlen(login.c_str()));
   n = rio_readlineb(&rio, buf, sizeof(buf));
 
   if(use_transaction) {
-    std::string get = "BEGIN\n";
-    rio_writen(fd, get.data(), get.length());
+    std::string begin = "BEGIN\n";
+    rio_writen(fd, begin.data(), begin.length());
     n = rio_readlineb(&rio, buf, sizeof(buf));
   }
 
@@ -64,8 +64,8 @@ int main(int argc, char **argv) {
   n = rio_readlineb(&rio, buf, sizeof(buf));
 
   if(use_transaction) {
-    std::string get = "COMMIT\n";
-    rio_writen(fd, get.data(), get.length());
+    std::string commit = "COMMIT\n";
+    rio_writen(fd, commit.data(), commit.length());
     n = rio_readlineb(&rio, buf, sizeof(buf));
   }
 
