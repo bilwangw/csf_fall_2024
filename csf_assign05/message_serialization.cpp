@@ -12,7 +12,7 @@ void MessageSerialization::encode( const Message &msg, std::string &encoded_msg 
   // TODO: implement
   MessageType message = msg.get_message_type();
   encoded_msg = "";
-
+  // encode the message depending on what the message type (each will have different number of arguments)
   switch(message) {
     case MessageType::LOGIN:
       encoded_msg += "LOGIN " + msg.get_arg(0);
@@ -71,11 +71,11 @@ void MessageSerialization::encode( const Message &msg, std::string &encoded_msg 
       break;
     default:
       //throw error
+      throw InvalidMessage("Message type has no match");
       break;
 
   }
   encoded_msg += "\n";
-  //std::cout << encoded_msg;
   if (encoded_msg.length() > Message::MAX_ENCODED_LEN) {
     throw InvalidMessage("Invalid message: Message exceeds maximum limit");
   }
@@ -83,6 +83,7 @@ void MessageSerialization::encode( const Message &msg, std::string &encoded_msg 
 
 void MessageSerialization::decode( const std::string &encoded_msg, Message &msg )
 {
+  //check for errors and throw corresponding exceptions
   if (!msg.is_valid()) {
     throw InvalidMessage("Invalid message: The message is invalid");
   }
@@ -92,12 +93,10 @@ void MessageSerialization::decode( const std::string &encoded_msg, Message &msg 
   if (encoded_msg.back() != '\n') {
     throw InvalidMessage("Invalid message: The message does not end in a newline character");
   }
-  // TODO: implement
-  // int end = encoded_msg.find(" ");
-  // std::string message_type = encoded_msg.substr(0, end);
   const Message new_msg;
   msg = new_msg;
 
+  //read in each message and push to stack depending on message type
   std::string word;
   std::string message_type;
   std::istringstream iss(encoded_msg);
@@ -172,6 +171,6 @@ void MessageSerialization::decode( const std::string &encoded_msg, Message &msg 
     msg.push_arg(word);
   }
   else {
-    throw InvalidMessage("u fuckde up ");
+    throw InvalidMessage("Wrong message type");
   }
 }

@@ -30,7 +30,6 @@ Message::~Message()
 
 Message &Message::operator=( const Message &rhs )
 {
-  // TODO: implement
   this->m_message_type = rhs.m_message_type;
   std::vector<std::string> temp;
   if (rhs.m_args.empty()) {
@@ -54,18 +53,17 @@ void Message::set_message_type(MessageType message_type)
 
 std::string Message::get_username() const
 {
-  // TODO: implement
+  //first check type, if it is not valid type return an empty string
   if (m_message_type == MessageType::LOGIN) {
     return get_arg(0);
   }
-
   return "";
   
 }
 
 std::string Message::get_table() const
 {
-  // TODO: implement
+  //first check type, if it is not valid type return an empty string
   if (m_message_type == MessageType::CREATE || m_message_type == MessageType::SET || m_message_type == MessageType::GET) {
     return get_arg(0);
   }
@@ -74,6 +72,7 @@ std::string Message::get_table() const
 
 std::string Message::get_key() const
 {
+  //first check type, if it is not valid type return an empty string
   if (m_message_type == MessageType::SET || m_message_type == MessageType::GET) {
     return get_arg(1);
   }
@@ -82,16 +81,16 @@ std::string Message::get_key() const
 
 std::string Message::get_value() const
 {
+  //first check type, if it is not valid type return an empty string
   if (m_message_type == MessageType::PUSH || m_message_type == MessageType::DATA) {
     return get_arg(0);
   }
-  // TODO: implement
   return "";
 }
 
 std::string Message::get_quoted_text() const
 {
-  // TODO: implement
+  //first check type, if it is not valid type return an empty string
   if (m_message_type == MessageType::FAILED || m_message_type == MessageType::ERROR) {
     return get_arg(0);
   }
@@ -105,7 +104,7 @@ void Message::push_arg( const std::string &arg )
 
 bool Message::is_valid() const
 {
-  // TODO: implement
+  // check if valid depending on message type 
   if (m_message_type == MessageType::LOGIN || m_message_type == MessageType::CREATE) {
     return get_num_args() == 1 && identifier_valid(get_arg(0));
   } else if (m_message_type == MessageType::SET || m_message_type == MessageType::GET) {
@@ -113,7 +112,7 @@ bool Message::is_valid() const
   } else if (m_message_type == MessageType::PUSH || m_message_type == MessageType::DATA ) {
     return get_num_args() == 1;
   } else if (m_message_type == MessageType::FAILED || m_message_type == MessageType::ERROR ) {
-    return get_num_args() == 1;// && get_arg(0).back() == '"' && get_arg(0)[0] == '"';
+    return get_num_args() == 1;
   }
   else {
     return get_num_args() == 0;
@@ -121,6 +120,7 @@ bool Message::is_valid() const
 
 }
 
+//helper function to ensure identifier follows strict pattern
 bool identifier_valid(std::string id) {
   std::regex pattern("^[A-Za-z0-9_]+$");
   return std::regex_match(id, pattern) && std::isalpha(id[0]);
