@@ -2,7 +2,6 @@
 #include "exceptions.h"
 
 ValueStack::ValueStack()
-  // TODO: initialize member variable(s) (if necessary)
 {
 }
 
@@ -22,16 +21,20 @@ void ValueStack::push( const std::string &value )
 
 std::string ValueStack::get_top() const
 {
+  // check if empty
   if (is_empty()) {
     throw OperationException("Stack is empty");
   }
+  // otherwise, return end of stack vector
   return stack.back();
 }
 
 void ValueStack::pop()
 {
+  // check if empty
   if (is_empty()) {
     throw OperationException("Stack is empty");
   }
+  // otherwise, pop end of stack vector
   stack.pop_back();
 }

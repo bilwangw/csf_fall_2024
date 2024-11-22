@@ -11,14 +11,14 @@ bool error_handling(ssize_t n, char* buf){
     return 1;
   }
   if(output.find("ERROR") != std::string::npos) { //error handling for Error message
-    std::string err_msg = output.substr(6,std::string::npos);
+    std::string err_msg = output.substr(6,std::string::npos); //use substr to get text after ERROR 
     //remove " " from quoted text
     err_msg.erase(std::remove(err_msg.begin(), err_msg.end(), '\"'), err_msg.end());
     std::cerr << "Error: " << err_msg;
     return 1;
   }
   else if(output.find("FAILED") != std::string::npos) { //error handling for Failed message
-    std::string err_msg = output.substr(7,std::string::npos);
+    std::string err_msg = output.substr(7,std::string::npos); // use substr to get text after FAILED 
     //remove " " from quoted text
     err_msg.erase(std::remove(err_msg.begin(), err_msg.end(), '\"'), err_msg.end());
     std::cerr << "Error: " << err_msg;

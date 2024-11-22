@@ -9,7 +9,6 @@
 void MessageSerialization::encode( const Message &msg, std::string &encoded_msg )
 {
 
-  // TODO: implement
   MessageType message = msg.get_message_type();
   encoded_msg = "";
   // encode the message depending on what the message type (each will have different number of arguments)
@@ -75,7 +74,9 @@ void MessageSerialization::encode( const Message &msg, std::string &encoded_msg 
       break;
 
   }
+  // add a newline character at the end
   encoded_msg += "\n";
+  // if the message exceeds buffer length, throw error
   if (encoded_msg.length() > Message::MAX_ENCODED_LEN) {
     throw InvalidMessage("Invalid message: Message exceeds maximum limit");
   }
@@ -158,11 +159,13 @@ void MessageSerialization::decode( const std::string &encoded_msg, Message &msg 
   }
   else if (message_type == "FAILED") {
     msg.set_message_type(MessageType::FAILED);
+    // use substr to isolate message contents
     word = encoded_msg.substr(8,encoded_msg.length()-10);
     msg.push_arg(word);
   }
   else if (message_type == "ERROR") {
     msg.set_message_type(MessageType::ERROR);
+    // use substr to isolate message contents
     word = encoded_msg.substr(8,encoded_msg.length()-10);
     msg.push_arg(word);
   }
@@ -171,6 +174,7 @@ void MessageSerialization::decode( const std::string &encoded_msg, Message &msg 
     msg.push_arg(word);
   }
   else {
+    // if message type is none of the above, throw error
     throw InvalidMessage("Wrong message type");
   }
 }

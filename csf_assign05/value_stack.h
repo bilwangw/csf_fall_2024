@@ -6,8 +6,7 @@
 
 class ValueStack {
 private:
-  // TODO: member variable(s)
-  std::vector<std::string> stack;
+  std::vector<std::string> stack; // use a vector to store value stack
 
 public:
   ValueStack();

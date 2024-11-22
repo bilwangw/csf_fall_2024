@@ -32,6 +32,7 @@ Message &Message::operator=( const Message &rhs )
 {
   this->m_message_type = rhs.m_message_type;
   std::vector<std::string> temp;
+  // check if rhs is an empty message, if set this to an empty message
   if (rhs.m_args.empty()) {
     this->m_args = temp;
     return *this;
