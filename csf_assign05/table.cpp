@@ -18,10 +18,10 @@ Table::~Table()
 //attempt to lock table
 void Table::lock()
 {
+  pthread_mutex_lock(&mutex);
   if (!trylock()) { // ensure that lock is possible
     throw FailedTransaction("Mutex lock error");
   }
-  pthread_mutex_lock(&mutex);
 }
 
 //attempt to unlock table
