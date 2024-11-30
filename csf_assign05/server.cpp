@@ -34,6 +34,13 @@ void Server::server_loop()
   if ( pthread_create( &thr_id, nullptr, client_worker, client ) != 0 )
     log_error( "Could not create client thread" );
 */
+  //have to get client_fd from somewhere?
+  ClientConnection *client = new ClientConnection(this, client_fd);
+  pthread_t thr_id;
+  //the last argument (client) is just a pointer to client that is passed into the clientworker function as an argument
+  if (pthread_create( &thr_id, nullptr, client_worker, client ) != 0) {
+    log_error("Could not create client thread");
+  } 
 }
 
 
@@ -49,6 +56,9 @@ void *Server::client_worker( void *arg )
   client->chat_with_client();
   return nullptr;
 */
+  std::unique_ptr<ClientConnection> client( static_cast<ClientConnection *>( arg ) );
+  client->chat_with_client(); // --> to be implemented in clientconnection.cpp
+  return nullptr;
 }
 
 void Server::log_error( const std::string &what )
