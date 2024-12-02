@@ -6,15 +6,19 @@
 #include <pthread.h>
 #include "table.h"
 #include "client_connection.h"
+#include <vector>
+#include <iterator>
 
 class Server {
 private:
   // TODO: add member variables
-
+  std::vector<Table*> tableList;
+  std::vector<Table*> lockedTables;
   // copy constructor and assignment operator are prohibited
   Server( const Server & );
   Server &operator=( const Server & );
-
+  int port;
+  int server_fd;
 public:
   Server();
   ~Server();
@@ -34,6 +38,10 @@ public:
   Table *find_table( const std::string &name );
   void log_error( const std::string &what );
 */
+  void create_table( const std::string &name );
+  Table *find_table( const std::string &name );
+  void lock_table( const std::string &name);
+  void unlock_table(const std::string &name);
 };
 
 

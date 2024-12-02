@@ -20,6 +20,11 @@ Server::~Server()
 void Server::listen( const std::string &port )
 {
   // TODO: implement
+  server_fd = open_listenfd(port.c_str());
+  this->port = stoi(port);
+  if(server_fd < 0) {
+    log_error("Opening socket failed"); // idk what error msg is supposed to be
+  }
 }
 
 void Server::server_loop()
@@ -35,12 +40,22 @@ void Server::server_loop()
     log_error( "Could not create client thread" );
 */
   //have to get client_fd from somewhere?
-  ClientConnection *client = new ClientConnection(this, client_fd);
-  pthread_t thr_id;
-  //the last argument (client) is just a pointer to client that is passed into the clientworker function as an argument
-  if (pthread_create( &thr_id, nullptr, client_worker, client ) != 0) {
-    log_error("Could not create client thread");
-  } 
+  int keep_going = 1;
+  while (keep_going) {
+    int client_fd = Accept(server_fd, NULL, NULL);
+    if(client_fd > 0) {
+      ClientConnection *client = new ClientConnection(this, client_fd);
+      pthread_t thr_id;
+      //the last argument (client) is just a pointer to client that is passed into the clientworker function as an argument
+      if (pthread_create( &thr_id, nullptr, client_worker, client ) != 0) {
+        log_error("Could not create client thread");
+        keep_going = 0;
+      }
+      close(client_fd);
+    }
+    
+  }
+  close(server_fd);
 }
 
 
@@ -67,3 +82,35 @@ void Server::log_error( const std::string &what )
 }
 
 // TODO: implement member functions
+
+void Server::create_table( const std::string &name ) {
+  if(find_table(name) == nullptr) {
+    tableList.push_back(new Table(name));
+  }
+}
+
+Table *Server::find_table( const std::string &name ) {
+  std::vector<Table*>::iterator it;
+  for (it = tableList.begin(); it != tableList.end(); ++it) {
+    if((*it)->get_name() == name) {
+      return *it;
+    }
+  }
+  return nullptr;
+}
+// might need to implement table lock tracking in client connection, not server
+void Server::lock_table(const std::string &name) {
+  Table *lockTable = find_table(name);
+  if(find_table(name) != nullptr) {
+    lockedTables.push_back(lockTable);
+    lockTable->lock();
+  }
+}
+void Server::unlock_table(const std::string &name) {
+  std::vector<Table*>::iterator it;
+  for (it = lockedTables.begin(); it != lockedTables.end(); ++it) {
+    if((*it)->get_name() == name) {
+      (*it)->unlock();
+    }
+  }
+}
