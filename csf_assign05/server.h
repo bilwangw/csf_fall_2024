@@ -38,9 +38,10 @@ public:
   Table *find_table( const std::string &name );
   void log_error( const std::string &what );
 */
-  void create_table( const std::string &name );
+  bool create_table( const std::string &name );
   Table *find_table( const std::string &name );
   void lock_table( const std::string &name);
+  bool try_lock_table ( const std::string &name);
   void unlock_table(const std::string &name);
 };
 

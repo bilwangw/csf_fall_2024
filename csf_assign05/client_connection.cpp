@@ -34,6 +34,9 @@ void ClientConnection::chat_with_client()
     if (n < 0) {
       m_server->log_error("IO error");
     }
+    //use try catch blocks to catch errors that are thrown and release locks 
+
+
     std::string request = buf;
     //process the request and actually do stuff (do we just use hella if statements for each message type?)
     Message msg;
@@ -49,8 +52,18 @@ void ClientConnection::chat_with_client()
         rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
         break;
       case MessageType::CREATE:
-        m_server->create_table(msg.get_table());
-        if (transaction) { // if transaction mode is on, add table to client and server locked table lists
+        //std::cout << msg.get_table();
+        if (m_server->create_table(msg.get_table())) {
+          if (transaction) {
+            //try to lock the tables
+            if (!m_server->try_lock_table(msg.get_table())) {
+              //rollback changes
+            }
+          }
+        } else {
+          //output error (table already exists)
+        }
+        if (transaction) { // if transaction mode is on, use trylock to lock any tables that will be used, if trylock fails, then rollback all changes made
           newTables.push_back(m_server->find_table(msg.get_table())); // add to list of created tables
           lockedTables.push_back(m_server->find_table(msg.get_table()));
           m_server->lock_table(msg.get_table());
@@ -74,10 +87,21 @@ void ClientConnection::chat_with_client()
         break;
       case MessageType::SET:
         new_table = m_server->find_table(msg.get_table());
-        if(transaction) { // if transaction mode is on, add to local table lock tracker
-          lockedTables.push_back(new_table);
+        if (new_table == nullptr) {
+          m_server->log_error("Invalid table");
+          //handle error --> unsure if we should just back out
+          break;
         }
-        m_server->lock_table(msg.get_table()); // always lock table on the server
+        if(transaction) { // if transaction mode is on, add to local table lock tracker
+          if (m_server->try_lock_table(msg.get_table())) {
+            lockedTables.push_back(new_table);
+          } else {
+            //rollback
+          }
+        } else {
+          m_server->lock_table(msg.get_table());
+        }
+         // always lock table on the server
         if (new_table != nullptr) {
           new_table->set(msg.get_key(), stack.get_top());
           return_msg = "OK\n";
@@ -93,9 +117,21 @@ void ClientConnection::chat_with_client()
       case MessageType::GET:
         new_table = m_server->find_table(msg.get_table());
         if (new_table != nullptr) {
+          if (transaction) {
+            if (m_server->try_lock_table(msg.get_table())) { //try to obtain a lock, if successful, add it to locked tables
+                lockedTables.push_back(new_table);
+            } else {
+              //rollback changes
+            }
+          } else {
+            m_server->lock_table(msg.get_table());
+          }
           stack.push(new_table->get(msg.get_key()));
           return_msg = "OK\n";
           rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+          if (!transaction) {
+            m_server->unlock_table(msg.get_table());
+          }
         }
         else {
           m_server->log_error("Invalid table");
@@ -189,3 +225,6 @@ void ClientConnection::chat_with_client()
 }
 
 // TODO: additional member functions
+void rollback_all_changes() {
+  
+}

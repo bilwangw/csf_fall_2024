@@ -19,17 +19,17 @@ Table::~Table()
 void Table::lock()
 {
   pthread_mutex_lock(&mutex);
-  if (!trylock()) { // ensure that lock is possible
-    throw FailedTransaction("Mutex lock error");
-  }
+  // if (!trylock()) { // ensure that lock is possible
+  //   throw FailedTransaction("Mutex lock error");
+  // }
 }
 
 //attempt to unlock table
 void Table::unlock()
 {
-  if (!trylock()) { // ensure that lock is possible
-    throw FailedTransaction("Mutex lock error");
-  }
+  // if (!trylock()) { // ensure that lock is possible
+  //   throw FailedTransaction("Mutex lock error");
+  // }
   pthread_mutex_unlock(&mutex);
 }
 

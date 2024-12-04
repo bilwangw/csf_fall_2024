@@ -86,9 +86,13 @@ void Server::log_error( const std::string &what )
 
 // TODO: implement member functions
 
-void Server::create_table( const std::string &name ) {
+//returns 0 if there already exists a table with that name, 1 otherwise
+bool Server::create_table( const std::string &name ) {
   if(find_table(name) == nullptr) {
     tableList.push_back(new Table(name));
+    return true;
+  } else {
+    return false;
   }
 }
 
@@ -104,9 +108,24 @@ Table *Server::find_table( const std::string &name ) {
 // might need to implement table lock tracking in client connection, not server
 void Server::lock_table(const std::string &name) {
   Table *lockTable = find_table(name);
-  if(find_table(name) != nullptr) {
+  if(lockTable != nullptr) {
     lockedTables.push_back(lockTable);
     lockTable->lock();
+  }
+}
+
+//if trylock fails (returns false) then rollback changes
+bool Server::try_lock_table(const std::string &name) {
+  Table *to_lock = find_table(name);
+  if (to_lock != nullptr) {
+    if (to_lock->trylock()) {
+      lockedTables.push_back(to_lock);
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
   }
 }
 void Server::unlock_table(const std::string &name) {
