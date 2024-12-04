@@ -36,11 +36,17 @@ void ClientConnection::chat_with_client()
     }
     //use try catch blocks to catch errors that are thrown and release locks 
 
-
+    std::string failed_msg;
     std::string request = buf;
     //process the request and actually do stuff (do we just use hella if statements for each message type?)
     Message msg;
-    MessageSerialization::decode(request, msg);
+    try {
+      MessageSerialization::decode(request, msg);
+    } catch (InvalidMessage& e) {
+      std::string str(e.what());
+      failed_msg = "ERROR \"" + str + "\"\n";
+      rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+    }
     MessageType message = msg.get_message_type();
     std::string return_msg;
     std::vector<Table*>::iterator it;
@@ -78,13 +84,23 @@ void ClientConnection::chat_with_client()
         rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
         break;
       case MessageType::POP:
-        stack.pop();
-        return_msg = "OK\n";
-        rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+        try {
+          stack.pop();
+          return_msg = "OK\n";
+          rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+        } catch (OperationException& e) {
+          failed_msg = "FAILED \"stack is empty\"\n";
+          rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+        }
         break;
       case MessageType::TOP:
-        return_msg = "DATA " + stack.get_top() + "\n";
-        rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+        try {
+          return_msg = "DATA " + stack.get_top() + "\n";
+          rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+        } catch (OperationException& e) {
+          failed_msg = "FAILED \"stack is empty\"\n";
+          rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+        }
         break;
       case MessageType::SET:
         new_table = m_server->find_table(msg.get_table());
@@ -104,14 +120,9 @@ void ClientConnection::chat_with_client()
           m_server->lock_table(msg.get_table());
         }
          // always lock table on the server
-        if (new_table != nullptr) {
-          new_table->set(msg.get_key(), stack.get_top());
-          return_msg = "OK\n";
-          rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
-        }
-        else {
-          m_server->log_error("Invalid table");
-        }
+        new_table->set(msg.get_key(), stack.get_top());
+        return_msg = "OK\n";
+        rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
         if (!transaction) { // if autocommit mode is on, unlock immediately after command finishes
           m_server->unlock_table(msg.get_table());
         }
@@ -220,6 +231,8 @@ void ClientConnection::chat_with_client()
       default:
         //throw error
         throw InvalidMessage("Message type has no match");
+        // failed_msg = "ERROR \"Unknown message type \"\n";
+        // rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
         break;
     }
 

@@ -86,13 +86,13 @@ void MessageSerialization::decode( const std::string &encoded_msg, Message &msg 
 {
   //check for errors and throw corresponding exceptions
   if (!msg.is_valid()) {
-    throw InvalidMessage("Invalid message: The message is invalid");
+    throw InvalidMessage("Invalid arguments (number and/or format)");
   }
   if (encoded_msg.length() > Message::MAX_ENCODED_LEN) {
     throw InvalidMessage("Invalid message: Message exceeds maximum limit");
   }
   if (encoded_msg.back() != '\n') {
-    throw InvalidMessage("Invalid message: The message does not end in a newline character");
+    throw InvalidMessage("Invalid arguments (number and/or format)");
   }
   const Message new_msg;
   msg = new_msg;
@@ -175,6 +175,6 @@ void MessageSerialization::decode( const std::string &encoded_msg, Message &msg 
   }
   else {
     // if message type is none of the above, throw error
-    throw InvalidMessage("Wrong message type");
+    throw InvalidMessage("Unknown message type " + message_type);
   }
 }
