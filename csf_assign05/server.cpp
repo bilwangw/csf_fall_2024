@@ -5,6 +5,7 @@
 #include "exceptions.h"
 #include "guard.h"
 #include "server.h"
+#include <algorithm>
 
 Server::Server()
   // TODO: initialize member variables
@@ -44,14 +45,16 @@ void Server::server_loop()
   while (keep_going) {
     int client_fd = Accept(server_fd, NULL, NULL);
     if(client_fd > 0) {
+      std::cout << client_fd << "\n";
       ClientConnection *client = new ClientConnection(this, client_fd);
       pthread_t thr_id;
       //the last argument (client) is just a pointer to client that is passed into the clientworker function as an argument
       if (pthread_create( &thr_id, nullptr, client_worker, client ) != 0) {
         log_error("Could not create client thread");
+        close(client_fd);
         keep_going = 0;
       }
-      close(client_fd);
+      //close(client_fd);
     }
     
   }
@@ -107,10 +110,16 @@ void Server::lock_table(const std::string &name) {
   }
 }
 void Server::unlock_table(const std::string &name) {
+  bool found = false;
   std::vector<Table*>::iterator it;
   for (it = lockedTables.begin(); it != lockedTables.end(); ++it) {
     if((*it)->get_name() == name) {
       (*it)->unlock();
+      found = true;
+      break;
     }
+  }
+  if(found){
+    lockedTables.erase(it); // remove from iterator
   }
 }

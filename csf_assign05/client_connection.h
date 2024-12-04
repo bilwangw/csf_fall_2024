@@ -5,6 +5,7 @@
 #include "message.h"
 #include "csapp.h"
 #include "value_stack.h"
+#include <vector>
 
 class Server; // forward declaration
 class Table; // forward declaration
@@ -15,6 +16,9 @@ private:
   int m_client_fd;
   rio_t m_fdbuf;
   ValueStack stack;
+  bool transaction = 0;
+  std::vector<Table*> lockedTables; // keep track of tables locked during a transaction
+  std::vector<Table*> newTables; // keep track of tables created during a transaction
   // copy constructor and assignment operator are prohibited
   ClientConnection( const ClientConnection & );
   ClientConnection &operator=( const ClientConnection & );
