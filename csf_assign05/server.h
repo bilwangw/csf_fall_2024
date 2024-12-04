@@ -43,6 +43,7 @@ public:
   void lock_table( const std::string &name);
   bool try_lock_table ( const std::string &name);
   void unlock_table(const std::string &name);
+  void delete_table( const std::string &name);
 };
 
 

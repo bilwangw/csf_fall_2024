@@ -96,6 +96,19 @@ bool Server::create_table( const std::string &name ) {
   }
 }
 
+void Server::delete_table( const std::string &name) {
+  bool found = false;
+  std::vector<Table*>::iterator it;
+  for (it = lockedTables.begin(); it != lockedTables.end(); ++it) {
+    if((*it)->get_name() == name) {
+      found = true;
+      break;
+    }
+  }
+  if(found){
+    lockedTables.erase(it); 
+  }
+}
 Table *Server::find_table( const std::string &name ) {
   std::vector<Table*>::iterator it;
   for (it = tableList.begin(); it != tableList.end(); ++it) {

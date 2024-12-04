@@ -58,6 +58,7 @@ void ClientConnection::chat_with_client()
             //try to lock the tables
             if (!m_server->try_lock_table(msg.get_table())) {
               //rollback changes
+              this->rollback_all_changes();
             }
           }
         } else {
@@ -97,6 +98,7 @@ void ClientConnection::chat_with_client()
             lockedTables.push_back(new_table);
           } else {
             //rollback
+            this->rollback_all_changes();
           }
         } else {
           m_server->lock_table(msg.get_table());
@@ -122,6 +124,7 @@ void ClientConnection::chat_with_client()
                 lockedTables.push_back(new_table);
             } else {
               //rollback changes
+              this->rollback_all_changes();
             }
           } else {
             m_server->lock_table(msg.get_table());
@@ -225,6 +228,15 @@ void ClientConnection::chat_with_client()
 }
 
 // TODO: additional member functions
-void rollback_all_changes() {
-  
+void ClientConnection::rollback_all_changes() {
+  //delete tables that have been made in client_connection
+  for (std::vector<Table*>::iterator it = lockedTables.begin(); it != lockedTables.end(); it++) {
+    (*it)->unlock();
+    (*it)->rollback_changes();
+  }
+  lockedTables.erase(lockedTables.begin(), lockedTables.end());
+  for (std::vector<Table*>::iterator it = newTables.begin(); it != newTables.end(); it++) {
+    m_server->delete_table((*it)->get_name());
+  }
+  newTables.erase(newTables.begin(), newTables.end());
 }

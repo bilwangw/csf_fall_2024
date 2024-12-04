@@ -30,6 +30,7 @@ public:
   void chat_with_client();
 
   // TODO: additional member functions
+  void rollback_all_changes();
 };
 
 #endif // CLIENT_CONNECTION_H
