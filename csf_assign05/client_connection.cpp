@@ -51,7 +51,7 @@ void ClientConnection::chat_with_client()
     std::string return_msg;
     std::vector<Table*>::iterator it;
     Table* new_table;
-    std::cout << request;
+    //std::cout << request;
     switch(message) { // check which message type and act accordingly
       case MessageType::LOGIN:
         return_msg = "OK\n";
