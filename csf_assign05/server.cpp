@@ -92,6 +92,7 @@ bool Server::create_table( const std::string &name ) {
     tableList.push_back(new Table(name));
     return true;
   } else {
+    std::cout << "table alr exists\n";
     return false;
   }
 }

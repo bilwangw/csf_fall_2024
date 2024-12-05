@@ -27,16 +27,17 @@ void ClientConnection::chat_with_client()
   rio_readinitb(&rio, this->m_client_fd);
   char buf[1000];
   ssize_t n;
+  std::string failed_msg;
   //should be a loop in which each iteration reads in a request message from client, processes request, and send response back to client
   do { 
     //read in request from the client 
     n = rio_readlineb(&rio, buf, sizeof(buf));
     if (n < 0) {
-      m_server->log_error("IO error");
+      throw CommException("ERROR \"Failed I/O\"\n");
     }
     //use try catch blocks to catch errors that are thrown and release locks 
 
-    std::string failed_msg;
+    
     std::string request = buf;
     //process the request and actually do stuff (do we just use hella if statements for each message type?)
     Message msg;
@@ -67,8 +68,12 @@ void ClientConnection::chat_with_client()
               this->rollback_all_changes();
             }
           }
-        } else {
+        } 
+        else {
+          std::cout << "table exists\n";
           //output error (table already exists)
+          failed_msg = "ERROR \"Table " + msg.get_table() + " already exists\"\n";
+          rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
         }
         if (transaction) { // if transaction mode is on, use trylock to lock any tables that will be used, if trylock fails, then rollback all changes made
           newTables.push_back(m_server->find_table(msg.get_table())); // add to list of created tables
@@ -105,7 +110,7 @@ void ClientConnection::chat_with_client()
       case MessageType::SET:
         new_table = m_server->find_table(msg.get_table());
         if (new_table == nullptr) {
-          m_server->log_error("Invalid table");
+          
           //handle error --> unsure if we should just back out
           break;
         }
@@ -148,7 +153,7 @@ void ClientConnection::chat_with_client()
           }
         }
         else {
-          m_server->log_error("Invalid table");
+          
         }
         break;
       case MessageType::ADD:
