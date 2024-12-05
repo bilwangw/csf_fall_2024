@@ -54,9 +54,7 @@ void Server::server_loop()
         close(client_fd);
         keep_going = 0;
       }
-      //close(client_fd);
     }
-    
   }
   close(server_fd);
 }

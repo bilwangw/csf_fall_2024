@@ -129,7 +129,8 @@ void ClientConnection::chat_with_client()
         case MessageType::SET:
           new_table = m_server->find_table(msg.get_table());
           if (new_table == nullptr) {
-            
+            failed_msg = "FAILED \"Table " + msg.get_table() + " does not exist\"\n";
+            rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
             //handle error --> unsure if we should just back out
             break;
           }
@@ -144,7 +145,13 @@ void ClientConnection::chat_with_client()
             m_server->lock_table(msg.get_table());
           }
           // always lock table on the server
-          new_table->set(msg.get_key(), stack.get_top());
+          try { //catch exception if stack is empty
+            new_table->set(msg.get_key(), stack.get_top());
+          }
+          catch (OperationException& e) {
+            failed_msg = "FAILED \"stack is empty\"\n";
+            rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+          }
           return_msg = "OK\n";
           rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
           if (!transaction) { // if autocommit mode is on, unlock immediately after command finishes
@@ -171,11 +178,18 @@ void ClientConnection::chat_with_client()
               m_server->unlock_table(msg.get_table());
             }
           }
-          else {
-            
+          else { // if table does not exist
+            failed_msg = "FAILED \"Table " + msg.get_table() + " does not exist\"\n";
+            rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+            break;
           }
           break;
         case MessageType::ADD:
+          if(stack.size() < 2) {
+            failed_msg = "FAILED \"stack is empty\"\n";
+            rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+            break;
+          }
           try {
             int first = std::stoi(stack.get_top());
             stack.pop();
@@ -190,6 +204,11 @@ void ClientConnection::chat_with_client()
           }
           break;
         case MessageType::MUL:
+          if(stack.size() < 2) {
+            failed_msg = "FAILED \"stack is empty\"\n";
+            rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+            break;
+          }
           try {
             int first = std::stoi(stack.get_top());
             stack.pop();
@@ -204,6 +223,11 @@ void ClientConnection::chat_with_client()
           }
           break;
         case MessageType::SUB:
+          if(stack.size() < 2) {
+            failed_msg = "FAILED \"stack is empty\"\n";
+            rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+            break;
+          }
           try {
             int first = std::stoi(stack.get_top());
             stack.pop();
@@ -218,6 +242,11 @@ void ClientConnection::chat_with_client()
           }
           break;
         case MessageType::DIV:
+          if(stack.size() < 2) {
+            failed_msg = "FAILED \"stack is empty\"\n";
+            rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+            break;
+          }
           try {
             int first = std::stoi(stack.get_top());
             stack.pop();

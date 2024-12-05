@@ -29,6 +29,10 @@ std::string ValueStack::get_top() const
   return stack.back();
 }
 
+size_t ValueStack::size() const {
+  return stack.size();
+}
+
 void ValueStack::pop()
 {
   // check if empty

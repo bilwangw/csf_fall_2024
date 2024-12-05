@@ -19,6 +19,7 @@ public:
   // if called when the stack is empty
 
   std::string get_top() const;
+  size_t size() const;
   void pop();
 };
 
