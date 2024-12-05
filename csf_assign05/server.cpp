@@ -45,7 +45,7 @@ void Server::server_loop()
   while (keep_going) {
     int client_fd = Accept(server_fd, NULL, NULL);
     if(client_fd > 0) {
-      std::cout << client_fd << "\n";
+      //std::cout << client_fd << "\n";
       ClientConnection *client = new ClientConnection(this, client_fd);
       pthread_t thr_id;
       //the last argument (client) is just a pointer to client that is passed into the clientworker function as an argument
@@ -92,7 +92,6 @@ bool Server::create_table( const std::string &name ) {
     tableList.push_back(new Table(name));
     return true;
   } else {
-    std::cout << "table alr exists\n";
     return false;
   }
 }

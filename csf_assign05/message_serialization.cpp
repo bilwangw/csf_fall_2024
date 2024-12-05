@@ -85,6 +85,7 @@ void MessageSerialization::decode( const std::string &encoded_msg, Message &msg 
 {
   //check for errors and throw corresponding exceptions
   if (!msg.is_valid()) {
+    std::cout << "invalid message serialsization\n";
     throw InvalidMessage("Invalid arguments (number and/or format)");
     return;
   }

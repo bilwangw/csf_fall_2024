@@ -123,6 +123,6 @@ bool Message::is_valid() const
 
 //helper function to ensure identifier follows strict pattern
 bool identifier_valid(std::string id) {
-  std::regex pattern("^[A-Za-z0-9_]+$");
+  std::regex pattern("^[A-Za-z][A-Za-z0-9_]+$");
   return std::regex_match(id, pattern) && std::isalpha(id[0]);
 }
