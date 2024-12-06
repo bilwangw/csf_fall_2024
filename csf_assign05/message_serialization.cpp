@@ -84,11 +84,6 @@ void MessageSerialization::encode( const Message &msg, std::string &encoded_msg 
 void MessageSerialization::decode( const std::string &encoded_msg, Message &msg )
 {
   //check for errors and throw corresponding exceptions
-  if (!msg.is_valid()) {
-    std::cout << "invalid message serialsization\n";
-    throw InvalidMessage("Invalid arguments (number and/or format)");
-    return;
-  }
   if (encoded_msg.length() > Message::MAX_ENCODED_LEN) {
     throw InvalidMessage("Invalid message: Message exceeds maximum limit");
     return;
@@ -180,5 +175,10 @@ void MessageSerialization::decode( const std::string &encoded_msg, Message &msg 
     // if message type is none of the above, throw error
     std::string errMsg = "Unknown message type " + message_type;
     throw InvalidMessage(errMsg);
+  }
+  if (!msg.is_valid()) {
+    std::cout << "invalid message serialsization\n";
+    throw InvalidMessage("Invalid arguments (number and/or format)");
+    return;
   }
 }

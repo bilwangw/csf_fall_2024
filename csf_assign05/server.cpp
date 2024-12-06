@@ -24,7 +24,7 @@ void Server::listen( const std::string &port )
   server_fd = open_listenfd(port.c_str());
   this->port = stoi(port);
   if(server_fd < 0) {
-    log_error("Opening socket failed"); // idk what error msg is supposed to be
+    log_error("Could not open server socket");
   }
 }
 
@@ -40,12 +40,12 @@ void Server::server_loop()
   if ( pthread_create( &thr_id, nullptr, client_worker, client ) != 0 )
     log_error( "Could not create client thread" );
 */
-  //have to get client_fd from somewhere?
+
   int keep_going = 1;
   while (keep_going) {
     int client_fd = Accept(server_fd, NULL, NULL);
     if(client_fd > 0) {
-      //std::cout << client_fd << "\n";
+      std::cout << "new loop\n";
       ClientConnection *client = new ClientConnection(this, client_fd);
       pthread_t thr_id;
       //the last argument (client) is just a pointer to client that is passed into the clientworker function as an argument
@@ -72,6 +72,7 @@ void *Server::client_worker( void *arg )
   client->chat_with_client();
   return nullptr;
 */
+  pthread_detach(pthread_self());
   std::unique_ptr<ClientConnection> client( static_cast<ClientConnection *>( arg ) );
   client->chat_with_client(); // --> to be implemented in clientconnection.cpp
   return nullptr;
@@ -86,7 +87,7 @@ void Server::log_error( const std::string &what )
 
 //returns 0 if there already exists a table with that name, 1 otherwise
 bool Server::create_table( const std::string &name ) {
-  if(find_table(name) == nullptr) {
+  if(find_table(name) == nullptr) { // check if this table already exists
     tableList.push_back(new Table(name));
     return true;
   } else {

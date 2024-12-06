@@ -19,17 +19,11 @@ Table::~Table()
 void Table::lock()
 {
   pthread_mutex_lock(&mutex);
-  // if (!trylock()) { // ensure that lock is possible
-  //   throw FailedTransaction("Mutex lock error");
-  // }
 }
 
 //attempt to unlock table
 void Table::unlock()
 {
-  // if (!trylock()) { // ensure that lock is possible
-  //   throw FailedTransaction("Mutex lock error");
-  // }
   pthread_mutex_unlock(&mutex);
 }
 
@@ -65,6 +59,8 @@ std::string Table::get( const std::string &key )
     size_t space_location = table[key].find(' ');
     if (space_location != std::string::npos) {
       // if there is an uncommitted change, return the value after the whitespace
+      std::cout << space_location + "\n";
+      std::cout << table[key].substr(space_location+1, table[key].size()-space_location-1) + "\n";
       return table[key].substr(space_location+1, table[key].size()-space_location-1);
     } else {
       // otherwise, just return the value
