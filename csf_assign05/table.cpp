@@ -8,6 +8,7 @@
 Table::Table( const std::string &name )
   : m_name( name )
 {
+  //pthread_mutex_init(&mutex, NULL);
 }
 
 Table::~Table()
@@ -18,7 +19,10 @@ Table::~Table()
 //attempt to lock table
 void Table::lock()
 {
-  pthread_mutex_lock(&mutex);
+  if (pthread_mutex_lock(&mutex) == -1) {
+    std::cout << "lock failure\n";
+    throw FailedTransaction("Failure");
+  }
 }
 
 //attempt to unlock table
@@ -51,12 +55,13 @@ void Table::set( const std::string &key, const std::string &value )
 
 std::string Table::get( const std::string &key )
 {
-  //return empty string if key not in table
+  //return empty string and throw exception if key not in table
   if (!has_key(key)) {
-      return "";
+    std::string error_msg = "Unknown key " + key;
+    throw OperationException(error_msg);
+    return "";
   } else {
     // check if the value has a space, which indicates an uncommitted change
-    std::cout << table[key] << "\n";
     size_t space_location = table[key].find(' ');
     if (space_location != std::string::npos) {
       // if there is an uncommitted change, return the value after the whitespace
@@ -113,4 +118,8 @@ void Table::rollback_changes()
   for (std::vector<std::string>::iterator it = to_erase.begin(); it != to_erase.end(); it++) {
     table.erase(*it);
   }
+}
+
+pthread_mutex_t Table::get_pthread() {
+    return mutex;
 }

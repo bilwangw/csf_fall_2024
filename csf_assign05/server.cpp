@@ -40,7 +40,6 @@ void Server::server_loop()
   if ( pthread_create( &thr_id, nullptr, client_worker, client ) != 0 )
     log_error( "Could not create client thread" );
 */
-
   int keep_going = 1;
   while (keep_going) {
     int client_fd = Accept(server_fd, NULL, NULL);
@@ -73,7 +72,13 @@ void *Server::client_worker( void *arg )
 */
   pthread_detach(pthread_self());
   std::unique_ptr<ClientConnection> client( static_cast<ClientConnection *>( arg ) );
-  client->chat_with_client(); // --> to be implemented in clientconnection.cpp
+  try {
+    client->chat_with_client(); // --> to be implemented in clientconnection.cpp
+  }
+  catch (CommException &e) {
+    const std::string what = e.what();
+    log_error(e.what());
+  } 
   return nullptr;
 }
 
