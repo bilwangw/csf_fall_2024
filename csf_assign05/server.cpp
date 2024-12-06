@@ -45,7 +45,6 @@ void Server::server_loop()
   while (keep_going) {
     int client_fd = Accept(server_fd, NULL, NULL);
     if(client_fd > 0) {
-      std::cout << "new loop\n";
       ClientConnection *client = new ClientConnection(this, client_fd);
       pthread_t thr_id;
       //the last argument (client) is just a pointer to client that is passed into the clientworker function as an argument

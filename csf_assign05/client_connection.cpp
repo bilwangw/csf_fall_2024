@@ -29,6 +29,7 @@ void ClientConnection::chat_with_client()
   ssize_t n;
   std::string failed_msg;
   std::string return_msg;
+  bool transaction = 0;
   bool login = false;
   //should be a loop in which each iteration reads in a request message from client, processes request, and send response back to client
   do { 
@@ -73,33 +74,42 @@ void ClientConnection::chat_with_client()
       if (login) {
         switch(message) { // check which message type and act accordingly
           case MessageType::CREATE:
-            if (m_server->create_table(msg.get_table())) {
-              if (transaction) {
-                //try to lock the tables
-                if (!m_server->try_lock_table(msg.get_table())) { // failed to acquire lock
-                  //rollback changes
-                  //this->rollback_all_changes();
-                  failed_msg = "ERROR \"Unable to commit changes\"\n"; // output when rollback
-                  rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
-                }
-                else {
-                  newTables.push_back(m_server->find_table(msg.get_table())); // add to list of created tables
-                  lockedTables.push_back(m_server->find_table(msg.get_table())); // add to list of locked tables
-                  m_server->lock_table(msg.get_table());
-                  return_msg = "OK\n";
-                  rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
-                }
-              }
-              else { // if autocommit mode and table successfully created
-                return_msg = "OK\n";
-                rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
-              }
-            }
-            else { // if table already exists, regardless of transaction or autocommit mode
-              //output error (table already exists)
-              failed_msg = "ERROR \"Table " + msg.get_table() + " already exists\"\n";
-              rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
-            }
+          //don't need to consider tables created during transaction
+          if(m_server->create_table(msg.get_table())) { // check if table can be created
+            return_msg = "OK\n";
+            rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+          }
+          else {
+            failed_msg = "ERROR \"Table " + msg.get_table() + " already exists\"\n";
+            rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+          }
+            // if (m_server->create_table(msg.get_table())) {
+            //   if (transaction) {
+            //     //try to lock the tables
+            //     if (!m_server->try_lock_table(msg.get_table())) { // failed to acquire lock
+            //       //rollback changes
+            //       //this->rollback_all_changes();
+            //       failed_msg = "ERROR \"Unable to commit changes\"\n"; // output when rollback
+            //       rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+            //     }
+            //     else {
+            //       newTables.push_back(m_server->find_table(msg.get_table())); // add to list of created tables
+            //       lockedTables.push_back(m_server->find_table(msg.get_table())); // add to list of locked tables
+            //       m_server->lock_table(msg.get_table());
+            //       return_msg = "OK\n";
+            //       rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+            //     }
+            //   }
+            //   else { // if autocommit mode and table successfully created
+            //     return_msg = "OK\n";
+            //     rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+            //   }
+            // }
+            // else { // if table already exists, regardless of transaction or autocommit mode
+            //   //output error (table already exists)
+            //   failed_msg = "ERROR \"Table " + msg.get_table() + " already exists\"\n";
+            //   rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+            // }
             break;
           case MessageType::PUSH:
             stack.push(msg.get_value());
@@ -129,6 +139,18 @@ void ClientConnection::chat_with_client()
             //autocommit implementation?
             new_table = m_server->find_table(msg.get_table());
             if(new_table != nullptr) {
+              if(transaction) {
+                if (m_server->try_lock_table(msg.get_table())) {
+                  lockedTables.push_back(new_table);
+                  m_server->lock_table(msg.get_table());
+                }
+                else {
+                  this->rollback_all_changes();
+                  failed_msg = "FAILED \"Unable to access table\"\n";
+                  rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+                  break;
+                }
+              }
               new_table->set(msg.get_key(),stack.get_top());
               return_msg = "OK\n";
               rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
@@ -137,6 +159,7 @@ void ClientConnection::chat_with_client()
               failed_msg = "FAILED \"Table " + msg.get_table() + " does not exist\"\n";
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
             }
+            new_table->commit_changes();
             break;
             // if (new_table == nullptr) { // if table does not exist
             //   failed_msg = "FAILED \"Table " + msg.get_table() + " does not exist\"\n";
@@ -174,6 +197,18 @@ void ClientConnection::chat_with_client()
             // autocommit implementation?
             new_table = m_server->find_table(msg.get_table());
             if (new_table != nullptr) {
+              if(transaction) {
+                if (m_server->try_lock_table(msg.get_table())) {
+                  lockedTables.push_back(new_table);
+                  m_server->lock_table(msg.get_table());
+                }
+                else {
+                  this->rollback_all_changes();
+                  failed_msg = "FAILED \"Unable to access table\"\n";
+                  rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+                  break;
+                }
+              }
               stack.push(new_table->get(msg.get_key()));
               return_msg = "OK\n";
               rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
@@ -182,6 +217,7 @@ void ClientConnection::chat_with_client()
               failed_msg = "FAILED \"Table " + msg.get_table() + " does not exist\"\n";
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
             }
+            new_table->commit_changes();
             break;
             // if (new_table != nullptr) { // if table does not exist
             //   if (transaction) {
@@ -363,8 +399,8 @@ void ClientConnection::rollback_all_changes() {
     (*it)->rollback_changes();
   }
   lockedTables.erase(lockedTables.begin(), lockedTables.end());
-  for (std::vector<Table*>::iterator it = newTables.begin(); it != newTables.end(); it++) {
-    m_server->delete_table((*it)->get_name());
-  }
-  newTables.erase(newTables.begin(), newTables.end());
+  // for (std::vector<Table*>::iterator it = newTables.begin(); it != newTables.end(); it++) {
+  //   m_server->delete_table((*it)->get_name());
+  // }
+  //newTables.erase(newTables.begin(), newTables.end());
 }
