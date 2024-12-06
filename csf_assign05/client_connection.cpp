@@ -115,10 +115,21 @@ void ClientConnection::chat_with_client()
                 if(transaction) {
                   lockedTables.push_back(new_table);
                 }
-                //new_table->lock();
-                // std::cout << "attempting to lock\n";
-                // m_server->lock_table(msg.get_table());
-                // std::cout << "lock successful\n";
+                try { //catch exception if stack is empty
+                // set functionality does not seem correct, need to be able to hide changes until commit?
+                  new_table->set(msg.get_key(), stack.get_top());
+                }
+                catch (OperationException& e) {
+                  failed_msg = "FAILED \"stack is empty\"\n";
+                  rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+                  break;
+                }
+                return_msg = "OK\n";
+                rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+                if (!transaction) {
+                  new_table->commit_changes();
+                  m_server->unlock_table(msg.get_table());
+                }
               }
               else { // if transaction mode is on, will need to rollback changes
                 if(transaction) {
@@ -129,21 +140,6 @@ void ClientConnection::chat_with_client()
                 break;
               }
               
-              try { //catch exception if stack is empty
-                new_table->set(msg.get_key(), stack.get_top());
-              }
-              catch (OperationException& e) {
-                failed_msg = "FAILED \"stack is empty\"\n";
-                rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
-                break;
-              }
-              return_msg = "OK\n";
-              rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
-              if (!transaction) {
-                new_table->commit_changes();
-                m_server->unlock_table(msg.get_table());
-                //new_table->unlock();
-              }
             }
             else {
               failed_msg = "FAILED \"Table " + msg.get_table() + " does not exist\"\n";
@@ -151,14 +147,25 @@ void ClientConnection::chat_with_client()
             }
             break;
           case MessageType::GET:
-            // autocommit implementation?
             new_table = m_server->find_table(msg.get_table());
             if (new_table != nullptr) {
               if (m_server->try_lock_table(msg.get_table())) {
                 if(transaction) {
                   lockedTables.push_back(new_table);
                 }
-                // m_server->lock_table(msg.get_table());
+                try {
+                  stack.push(new_table->get(msg.get_key()));
+                }
+                catch (OperationException &e) {
+                  failed_msg = "FAILED \"Unknown key " + msg.get_key() + "\"\n";
+                  rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+                  break;
+                }
+                return_msg = "OK\n";
+                rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+                if(!transaction) {
+                  m_server->unlock_table(msg.get_table());
+                }
               }
               else {
                 if(transaction) {
@@ -167,20 +174,6 @@ void ClientConnection::chat_with_client()
                 failed_msg = "FAILED \"Unable to access table\"\n";
                 rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
                 break;
-              }
-              try {
-                stack.push(new_table->get(msg.get_key()));
-              }
-              catch (OperationException &e) {
-                failed_msg = "FAILED \"Unknown key " + msg.get_key() + "\"\n";
-                rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
-              }
-
-              return_msg = "OK\n";
-              rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
-              if(!transaction) {
-                new_table->commit_changes();
-                m_server->unlock_table(msg.get_table());
               }
             }
             else {
@@ -310,15 +303,11 @@ void ClientConnection::chat_with_client()
             return_msg = "OK\n";
             rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
             if(transaction) {
-              //this->rollback_all_changes();
+              this->rollback_all_changes();
             }
             close(m_client_fd);
             return;
           default:
-            //throw error
-            //throw InvalidMessage("Message type has no match");
-            // failed_msg = "ERROR \"Unknown message type \"\n";
-            // rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
             if(transaction) {
               this->rollback_all_changes();
             }

@@ -76,8 +76,7 @@ void *Server::client_worker( void *arg )
     client->chat_with_client(); // --> to be implemented in clientconnection.cpp
   }
   catch (CommException &e) {
-    const std::string what = e.what();
-    log_error(e.what());
+    std::cout << "failure\n";
   } 
   return nullptr;
 }
