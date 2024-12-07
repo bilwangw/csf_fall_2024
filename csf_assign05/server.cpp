@@ -10,6 +10,7 @@
 Server::Server()
   // TODO: initialize member variables
 {
+  //pthread_mutex_init(&mutex,NULL);
   // TODO: implement
 }
 
@@ -90,12 +91,13 @@ void Server::log_error( const std::string &what )
 
 //returns 0 if there already exists a table with that name, 1 otherwise
 bool Server::create_table( const std::string &name ) {
-  if(find_table(name) == nullptr) { // check if this table already exists
-    tableList.push_back(new Table(name));
-    return true;
-  } else {
-    return false;
-  }
+    // Guard g(mutex);
+    if(find_table(name) == nullptr) { // check if this table already exists
+      tableList.push_back(new Table(name));
+      return true;
+    } else {
+      return false;
+    }
 }
 
 void Server::delete_table( const std::string &name) {
@@ -112,16 +114,18 @@ void Server::delete_table( const std::string &name) {
   }
 }
 Table *Server::find_table( const std::string &name ) {
-  std::vector<Table*>::iterator it;
-  for (it = tableList.begin(); it != tableList.end(); ++it) {
-    if((*it)->get_name() == name) {
-      return *it;
+    //Guard g(mutex);
+    std::vector<Table*>::iterator it;
+    for (it = tableList.begin(); it != tableList.end(); ++it) {
+      if((*it)->get_name() == name) {
+        return *it;
+      }
     }
-  }
-  return nullptr;
+    return nullptr;
 }
 // might need to implement table lock tracking in client connection, not server
 void Server::lock_table(const std::string &name) {
+  //Guard g(mutex);
   Table *lockTable = find_table(name);
   if(lockTable != nullptr) {
     lockedTables.push_back(lockTable);
@@ -131,6 +135,7 @@ void Server::lock_table(const std::string &name) {
 
 //if trylock fails (returns false) then rollback changes
 bool Server::try_lock_table(const std::string &name) {
+  //Guard g(mutex);
   Table *to_lock = find_table(name);
   if (to_lock != nullptr) {
     if (to_lock->trylock()) {

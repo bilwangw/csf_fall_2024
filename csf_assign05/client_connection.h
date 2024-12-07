@@ -27,6 +27,7 @@ public:
   ~ClientConnection();
 
   void chat_with_client();
+  bool check_lock(Table* table);
 
   // TODO: additional member functions
   void rollback_all_changes();

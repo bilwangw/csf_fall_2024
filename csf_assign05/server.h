@@ -14,6 +14,7 @@ private:
   // TODO: add member variables
   std::vector<Table*> tableList;
   std::vector<Table*> lockedTables;
+  pthread_mutex_t mutex;
   // copy constructor and assignment operator are prohibited
   Server( const Server & );
   Server &operator=( const Server & );

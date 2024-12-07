@@ -46,7 +46,6 @@ void ClientConnection::chat_with_client()
     try {
       MessageSerialization::decode(request, msg);
     } catch (InvalidMessage& e) { // Fatal error, close client
-      std::cout << "invalid message\n";
       std::string str(e.what());
       failed_msg = "ERROR \"" + str + "\"\n";
       rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
@@ -111,10 +110,8 @@ void ClientConnection::chat_with_client()
           case MessageType::SET:
             new_table = m_server->find_table(msg.get_table());
             if(new_table != nullptr) { // check if table exists
-              if (m_server->try_lock_table(msg.get_table())) {
-                if(transaction) {
-                  lockedTables.push_back(new_table);
-                }
+              // this should only be true if transaction mode is on
+              if(check_lock(new_table)) { // if table is already locked by this client, proceed
                 try { //catch exception if stack is empty
                 // set functionality does not seem correct, need to be able to hide changes until commit?
                   new_table->set(msg.get_key(), stack.get_top());
@@ -126,20 +123,39 @@ void ClientConnection::chat_with_client()
                 }
                 return_msg = "OK\n";
                 rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
-                if (!transaction) {
-                  new_table->commit_changes();
-                  m_server->unlock_table(msg.get_table());
-                }
               }
-              else { // if transaction mode is on, will need to rollback changes
-                if(transaction) {
-                  this->rollback_all_changes();
+              else { // if table is not locally locked, need to relock, might be locked externally
+                if (new_table->trylock()) {
+                  if(transaction) {
+                    lockedTables.push_back(new_table);
+                  }
+                  try { //catch exception if stack is empty
+                  // set functionality does not seem correct, need to be able to hide changes until commit?
+                    new_table->set(msg.get_key(), stack.get_top());
+                  }
+                  catch (OperationException& e) {
+                    failed_msg = "FAILED \"stack is empty\"\n";
+                    rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+                    break;
+                  }
+                  return_msg = "OK\n";
+                  rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+                  if (!transaction) {
+                    new_table->commit_changes();
+                    new_table->unlock();
+                    //m_server->unlock_table(msg.get_table());
+                  }
                 }
-                failed_msg = "FAILED \"Unable to access table\"\n";
-                rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
-                break;
+                else { // if transaction mode is on, will need to rollback changes
+                  if(transaction) {
+                    this->rollback_all_changes();
+                  }
+                  failed_msg = "FAILED \"Unable to access table\"\n";
+                  rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+                  break;
+                }
+                
               }
-              
             }
             else {
               failed_msg = "FAILED \"Table " + msg.get_table() + " does not exist\"\n";
@@ -149,10 +165,8 @@ void ClientConnection::chat_with_client()
           case MessageType::GET:
             new_table = m_server->find_table(msg.get_table());
             if (new_table != nullptr) {
-              if (m_server->try_lock_table(msg.get_table())) {
-                if(transaction) {
-                  lockedTables.push_back(new_table);
-                }
+              // this should only be true if transaction mode is on
+              if(check_lock(new_table)) { // if table is already locked by this client, proceed
                 try {
                   stack.push(new_table->get(msg.get_key()));
                 }
@@ -163,17 +177,38 @@ void ClientConnection::chat_with_client()
                 }
                 return_msg = "OK\n";
                 rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
-                if(!transaction) {
-                  m_server->unlock_table(msg.get_table());
-                }
+                // if(!transaction) {
+                //   m_server->unlock_table(msg.get_table());
+                // }
               }
-              else {
-                if(transaction) {
-                  this->rollback_all_changes();
+              else { // if table is not locked by this client, try to lock
+                if (new_table->trylock()) {
+                  if(transaction) {
+                    lockedTables.push_back(new_table);
+                  }
+                  try {
+                    stack.push(new_table->get(msg.get_key()));
+                  }
+                  catch (OperationException &e) {
+                    failed_msg = "FAILED \"Unknown key " + msg.get_key() + "\"\n";
+                    rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+                    break;
+                  }
+                  return_msg = "OK\n";
+                  rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+                  if(!transaction) {
+                    new_table->unlock();
+                    // m_server->unlock_table(msg.get_table());
+                  }
                 }
-                failed_msg = "FAILED \"Unable to access table\"\n";
-                rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
-                break;
+                else {
+                  if(transaction) {
+                    this->rollback_all_changes();
+                  }
+                  failed_msg = "FAILED \"Unable to access table\"\n";
+                  rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+                  break;
+                }
               }
             }
             else {
@@ -288,7 +323,8 @@ void ClientConnection::chat_with_client()
               transaction = false;
               for (it = lockedTables.begin(); it != lockedTables.end(); ++it) { // iterate through local locked tables list
                   (*it)->commit_changes();
-                  m_server->unlock_table((*it)->get_name());
+                  (*it)->unlock();
+                  // m_server->unlock_table((*it)->get_name());
               }
               lockedTables.erase(lockedTables.begin(),lockedTables.end());
               return_msg = "OK\n";
@@ -339,4 +375,15 @@ void ClientConnection::rollback_all_changes() {
   //   m_server->delete_table((*it)->get_name());
   // }
   //newTables.erase(newTables.begin(), newTables.end());
+}
+
+bool ClientConnection::check_lock(Table* table) {
+  for (std::vector<Table*>::iterator it = lockedTables.begin(); it != lockedTables.end(); it++) {
+    if(*it == table) {
+      //std::cout << "check lock success\n";
+      return true;
+    }
+  }
+  //std::cout << "check lock fail\n";
+  return false;
 }
