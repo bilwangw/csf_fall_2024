@@ -66,8 +66,7 @@ std::string Table::get( const std::string &key )
     // make sure that space is in the string, or that space is NOT the last character
     if (space_location != std::string::npos || space_location != table[key].size() - 1) {
       // if there is an uncommitted change, return the value after the whitespace
-      std::string result = table[key].substr(space_location+1, table[key].size() - space_location - 1);
-
+      return table[key].substr(space_location+1, table[key].size() - space_location - 1);
     } else {
       // otherwise, just return the value
       return table[key];
