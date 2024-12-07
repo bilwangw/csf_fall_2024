@@ -79,6 +79,7 @@ void *Server::client_worker( void *arg )
   catch (CommException &e) {
     std::cout << "failure\n";
   } 
+  //pthread_detach(pthread_self());
   return nullptr;
 }
 
@@ -91,7 +92,7 @@ void Server::log_error( const std::string &what )
 
 //returns 0 if there already exists a table with that name, 1 otherwise
 bool Server::create_table( const std::string &name ) {
-    Guard g(mutex);
+    //Guard g(mutex);
     if(find_table(name) == nullptr) { // check if this table already exists
       tableList.push_back(new Table(name));
       return true;

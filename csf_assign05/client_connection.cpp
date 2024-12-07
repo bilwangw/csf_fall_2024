@@ -39,7 +39,10 @@ void ClientConnection::chat_with_client()
     //read in request from the client 
     n = rio_readlineb(&rio, buf, sizeof(buf));
     if (n < 0) {
-      throw CommException("ERROR \"Failed I/O\"\n");
+      rollback_all_changes();
+      close(m_client_fd);
+      return;
+      //throw CommException("ERROR \"Failed I/O\"\n");
     }
     //use try catch blocks to catch errors that are thrown and release locks 
 
@@ -52,6 +55,8 @@ void ClientConnection::chat_with_client()
       std::string str(e.what());
       failed_msg = "ERROR \"" + str + "\"\n";
       rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+      //should release all locks and exit
+      rollback_all_changes();
       close(m_client_fd);
       return;
     }
@@ -68,8 +73,11 @@ void ClientConnection::chat_with_client()
         rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
         if(transaction) {
           this->rollback_all_changes();
+        } else {
+          unlock_all();
         }
         close(m_client_fd);
+        return;
       }
     }
     else {
@@ -80,9 +88,13 @@ void ClientConnection::chat_with_client()
             if(m_server->create_table(msg.get_table())) { // check if table can be created
               return_msg = "OK\n";
               rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
+              // if (transaction) {
+              //   m_server->lock_table(msg.get_table());
+              // }
             }
             else {
               failed_msg = "ERROR \"Table " + msg.get_table() + " already exists\"\n";
+              rollback_all_changes();
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
             }
             break;
@@ -98,6 +110,7 @@ void ClientConnection::chat_with_client()
               rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
             } catch (OperationException& e) {
               failed_msg = "FAILED \"stack is empty\"\n";
+              rollback_all_changes();
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
             }
             break;
@@ -107,6 +120,7 @@ void ClientConnection::chat_with_client()
               rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
             } catch (OperationException& e) {
               failed_msg = "FAILED \"stack is empty\"\n";
+              rollback_all_changes();
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
             }
             break;
@@ -116,16 +130,18 @@ void ClientConnection::chat_with_client()
             new_table = m_server->find_table(table_name);
             if (new_table == nullptr) { // if table does not exist
               failed_msg = "FAILED \"Table " + table_name + " does not exist\"\n";
+              rollback_all_changes();
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
               break;
             }
             if(transaction) { // if transaction mode is on
               if(!check_lock(new_table)) { // check if table is already locked by this transaction
-                lock_success = new_table->trylock();
-                if(!lock_success) {
-                  this->rollback_all_changes(); // rollback all changes if lock fails
+                if(!new_table->trylock()) {
+                   // rollback all changes if lock fails
+                  transaction = false;
                   failed_msg = "FAILED \"Unable to access table\"\n";
                   rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
+                  this->rollback_all_changes();
                   break;
                 }
                 lockedTables.push_back(new_table);
@@ -144,6 +160,7 @@ void ClientConnection::chat_with_client()
               if(!transaction) { // if autocommit, unlock table after
                 new_table->unlock();
               }
+              rollback_all_changes();
               break;
             }
             if(!transaction) { // if autocommit, immediately commit changes and unlock
@@ -154,12 +171,13 @@ void ClientConnection::chat_with_client()
             rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
             break;
           case MessageType::GET:
-
             table_name = msg.get_table();
             table_key = msg.get_key();
             new_table = m_server->find_table(table_name);
             if (new_table == nullptr) { // if table does not exist
               failed_msg = "FAILED \"Table " + table_name + " does not exist\"\n";
+              rollback_all_changes();
+              transaction = false;
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
               break;
             }
@@ -169,6 +187,7 @@ void ClientConnection::chat_with_client()
                 if(!lock_success) {
                   this->rollback_all_changes(); // rollback all changes if failed
                   failed_msg = "FAILED \"Unable to access table\"\n";
+                  transaction = false;
                   rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
                   break;
                 }
@@ -187,6 +206,8 @@ void ClientConnection::chat_with_client()
               if(!transaction) { // if autocommit, unlock table after
                 new_table->unlock();
               }
+              rollback_all_changes();
+              transaction = false;
               break;
             }
             if(!transaction) { // make sure to unlock if autocommit
@@ -198,6 +219,7 @@ void ClientConnection::chat_with_client()
           case MessageType::ADD:
             if(stack.size() < 2) {
               failed_msg = "FAILED \"stack is empty\"\n";
+              rollback_all_changes();
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
               break;
             }
@@ -212,6 +234,7 @@ void ClientConnection::chat_with_client()
             }
             catch (const std::invalid_argument& e){
               failed_msg = "FAILED \"Top two values aren't numeric\"\n";
+              rollback_all_changes();
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
               break;
             }
@@ -219,6 +242,7 @@ void ClientConnection::chat_with_client()
           case MessageType::MUL:
             if(stack.size() < 2) {
               failed_msg = "FAILED \"stack is empty\"\n";
+              rollback_all_changes();
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
               break;
             }
@@ -233,6 +257,7 @@ void ClientConnection::chat_with_client()
             }
             catch (const std::invalid_argument& e){
               failed_msg = "FAILED \"Top two values aren't numeric\"\n";
+              rollback_all_changes();
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
               break;
             }
@@ -240,6 +265,7 @@ void ClientConnection::chat_with_client()
           case MessageType::SUB:
             if(stack.size() < 2) {
               failed_msg = "FAILED \"stack is empty\"\n";
+              rollback_all_changes();
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
               break;
             }
@@ -254,6 +280,7 @@ void ClientConnection::chat_with_client()
             }
             catch (const std::invalid_argument& e){
               failed_msg = "FAILED \"Top two values aren't numeric\"\n";
+              rollback_all_changes();
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
               break;
             }
@@ -261,6 +288,7 @@ void ClientConnection::chat_with_client()
           case MessageType::DIV:
             if(stack.size() < 2) {
               failed_msg = "FAILED \"stack is empty\"\n";
+              rollback_all_changes();
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
               break;
             }
@@ -271,6 +299,7 @@ void ClientConnection::chat_with_client()
               stack.pop();
               if (first == 0) {
                 failed_msg = "FAILED \"Cannot divide by zero\"\n";
+                rollback_all_changes();
                 rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
                 break;
               }
@@ -280,6 +309,7 @@ void ClientConnection::chat_with_client()
             }
             catch (const std::invalid_argument& e){
               failed_msg = "FAILED \"Top two values aren't numeric\"\n";
+              rollback_all_changes();
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
               break;
             }
@@ -292,6 +322,8 @@ void ClientConnection::chat_with_client()
             // }
             if (transaction) {
               failed_msg = "FAILED \"Nested transactions aren't supported\"\n";
+              rollback_all_changes();
+              transaction = false;
               rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
               break;
             }
@@ -317,6 +349,7 @@ void ClientConnection::chat_with_client()
             }
             else {
               close(m_client_fd);
+              unlock_all();
               return;
             }
             break;
@@ -325,7 +358,7 @@ void ClientConnection::chat_with_client()
             rio_writen(m_client_fd, return_msg.c_str(), strlen(return_msg.c_str()));
             if(transaction) {
               this->rollback_all_changes();
-            }
+            } 
             close(m_client_fd);
             return;
           default:
@@ -339,6 +372,7 @@ void ClientConnection::chat_with_client()
       }
       else { // client not logged in
         failed_msg = "ERROR \"First request must be LOGIN\"\n";
+        rollback_all_changes();
         rio_writen(m_client_fd, failed_msg.c_str(), strlen(failed_msg.c_str()));
         close(m_client_fd);
         return;
@@ -352,10 +386,13 @@ void ClientConnection::chat_with_client()
 void ClientConnection::rollback_all_changes() {
   //delete tables that have been made in client_connection
   for (std::vector<Table*>::iterator it = lockedTables.begin(); it != lockedTables.end(); it++) {
-    (*it)->unlock();
     (*it)->rollback_changes();
+    (*it)->unlock();
+    
   }
   lockedTables.erase(lockedTables.begin(), lockedTables.end());
+  //this might be a bit cooked bc 
+
   // for (std::vector<Table*>::iterator it = newTables.begin(); it != newTables.end(); it++) {
   //   m_server->delete_table((*it)->get_name());
   // }
@@ -365,9 +402,15 @@ void ClientConnection::rollback_all_changes() {
 // checks if table is already locked by this transaction, return true if yes, 
 bool ClientConnection::check_lock(Table* table) { 
   for (std::vector<Table*>::iterator it = lockedTables.begin(); it != lockedTables.end(); it++) {
-    if(*it == table) {
+    if((*it)->get_name() == table->get_name()) {
       return true;
     }
   }
   return false;
+}
+
+void ClientConnection::unlock_all() {
+  for (std::vector<Table*>::iterator it = lockedTables.begin(); it != lockedTables.end(); it++) {
+    (*it)->unlock();
+  }
 }

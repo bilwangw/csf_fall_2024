@@ -8,6 +8,7 @@
 Table::Table( const std::string &name )
   : m_name( name )
 {
+  mutex = PTHREAD_MUTEX_INITIALIZER;
   //pthread_mutex_init(&mutex, NULL);
 }
 
@@ -19,10 +20,11 @@ Table::~Table()
 //attempt to lock table
 void Table::lock()
 {
-  if (pthread_mutex_lock(&mutex) == -1) {
-    std::cout << "lock failure\n";
-    throw FailedTransaction("Failure");
-  }
+  pthread_mutex_lock(&mutex);
+  // if (pthread_mutex_lock(&mutex) == -1) {
+  //   std::cout << "lock failure\n";
+  //   throw FailedTransaction("Failure");
+  // }
 }
 
 //attempt to unlock table

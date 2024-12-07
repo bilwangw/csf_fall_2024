@@ -85,11 +85,11 @@ void MessageSerialization::decode( const std::string &encoded_msg, Message &msg 
 {
   //check for errors and throw corresponding exceptions
   if (encoded_msg.length() > Message::MAX_ENCODED_LEN) {
-    throw InvalidMessage("Invalid message: Message exceeds maximum limit");
+    throw InvalidMessage("Encoded exceeds maximum limit");
     return;
   }
   if (encoded_msg.back() != '\n') {
-    throw InvalidMessage("Invalid arguments (number and/or format)");
+    throw InvalidMessage("Encoded message doesn't end in newline");
     return;
   }
   const Message new_msg;

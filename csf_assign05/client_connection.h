@@ -28,7 +28,7 @@ public:
 
   void chat_with_client();
   bool check_lock(Table* table);
-
+  void unlock_all();
   // TODO: additional member functions
   void rollback_all_changes();
 };
