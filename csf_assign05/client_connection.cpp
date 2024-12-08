@@ -31,7 +31,7 @@ void ClientConnection::chat_with_client()
   std::string return_msg;
   std::string table_name;
   std::string table_key;
-  bool transaction = 0;
+  transaction = 0;
   bool login = false;
   bool lock_success;
   //should be a loop in which each iteration reads in a request message from client, processes request, and send response back to client
@@ -386,10 +386,14 @@ void ClientConnection::chat_with_client()
 void ClientConnection::rollback_all_changes() {
   //delete tables that have been made in client_connection
   for (std::vector<Table*>::iterator it = lockedTables.begin(); it != lockedTables.end(); it++) {
+
     (*it)->rollback_changes();
     (*it)->unlock();
     
+    //lockedTables.clear();
+    transaction = false;
   }
+
   lockedTables.erase(lockedTables.begin(), lockedTables.end());
   //this might be a bit cooked bc 
 

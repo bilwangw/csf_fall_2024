@@ -8,13 +8,15 @@
 Table::Table( const std::string &name )
   : m_name( name )
 {
-  mutex = PTHREAD_MUTEX_INITIALIZER;
-  //pthread_mutex_init(&mutex, NULL);
+  // mutex = PTHREAD_MUTEX_INITIALIZER;
+  pthread_mutex_init(&mutex, NULL);
 }
 
 Table::~Table()
 {
+  pthread_mutex_destroy(&mutex);
   // default 
+
 }
 
 //attempt to lock table
@@ -36,7 +38,17 @@ void Table::unlock()
 // check if lock is possible
 bool Table::trylock()
 {
-  return (1 + pthread_mutex_trylock(&mutex)); //trylock returns -1 if fails, returns 0 if true, add one to correct behavior
+  int trylock = pthread_mutex_trylock(&mutex);
+  if(trylock == 0) {
+    return true;
+  }
+  else if (trylock == EBUSY) {
+    return false;
+  }
+  else {
+    throw OperationException("Table lock failure");
+  }
+  //return (1 + pthread_mutex_trylock(&mutex)); //trylock returns -1 if fails, returns 0 if true, add one to correct behavior
 }
 
 void Table::set( const std::string &key, const std::string &value )

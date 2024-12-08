@@ -10,20 +10,23 @@
 Server::Server()
   // TODO: initialize member variables
 {
-  pthread_mutex_init(&mutex,NULL);
+  pthread_mutex_init(&mutex,nullptr);
   // TODO: implement
 }
 
 Server::~Server()
 {
   // TODO: implement
+  if(server_fd >= 0) {
+    close(server_fd);
+  }
+  pthread_mutex_destroy(&mutex);
 }
 
 void Server::listen( const std::string &port )
 {
   // TODO: implement
-  server_fd = open_listenfd(port.c_str());
-  this->port = stoi(port);
+  server_fd = Open_listenfd(port.c_str());
   if(server_fd < 0) {
     log_error("Could not open server socket");
   }
@@ -53,6 +56,7 @@ void Server::server_loop()
         close(client_fd);
         keep_going = 0;
       }
+      pthread_detach(thr_id);
     }
   }
   close(server_fd);
@@ -71,7 +75,7 @@ void *Server::client_worker( void *arg )
   client->chat_with_client();
   return nullptr;
 */
-  pthread_detach(pthread_self());
+  
   std::unique_ptr<ClientConnection> client( static_cast<ClientConnection *>( arg ) );
   try {
     client->chat_with_client(); // --> to be implemented in clientconnection.cpp
@@ -92,7 +96,7 @@ void Server::log_error( const std::string &what )
 
 //returns 0 if there already exists a table with that name, 1 otherwise
 bool Server::create_table( const std::string &name ) {
-    //Guard g(mutex);
+    Guard g(mutex);
     if(find_table(name) == nullptr) { // check if this table already exists
       tableList.push_back(new Table(name));
       return true;

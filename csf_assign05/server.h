@@ -18,7 +18,6 @@ private:
   // copy constructor and assignment operator are prohibited
   Server( const Server & );
   Server &operator=( const Server & );
-  int port;
   int server_fd;
 public:
   Server();
